@@ -29,6 +29,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
   # ensure development environment is set correctly for clang
   $SUDO xcode-select -switch /Library/Developer/CommandLineTools
   brew install llvm@14 googletest google-benchmark lcov make wget cmake curl
+  brew install libff gmp boost@1.76
   CLANG_TIDY=/usr/local/bin/clang-tidy
   if [ ! -L "$CLANG_TIDY" ]; then
     $SUDO ln -s $(brew --prefix)/opt/llvm@14/bin/clang-tidy /usr/local/bin/clang-tidy
@@ -42,7 +43,7 @@ fi
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   apt update
   apt install -y build-essential wget cmake libgtest-dev libbenchmark-dev lcov git software-properties-common rsync unzip
-
+  apt install libboost-all-dev libgmp3-dev libssl-dev libprocps3-dev pkg-config libsodium-dev
   wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | $SUDO apt-key add -
   $SUDO add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main"
   $SUDO apt install -y clang-format-14 clang-tidy-14
@@ -149,13 +150,11 @@ make -j$CPUS
 $SUDO make install
 cd ../..
 
-# NOTE: updating evmone to v0.10.0 requires c++20
-EVMONE_VER=0.9.1
-wget https://github.com/ethereum/evmone/archive/refs/tags/v${EVMONE_VER}.zip
-rm -rf evmone-${EVMONE_VER}
-unzip v${EVMONE_VER}.zip
-rm v${EVMONE_VER}.zip
-cd evmone-${EVMONE_VER}
+wget https://github.com/ayeshaali/evmone/archive/885a04a6b48be95ddd64770cdb2e82a7eff3545a.zip
+rm -rf evmone-885a04a6b48be95ddd64770cdb2e82a7eff3545a
+unzip 885a04a6b48be95ddd64770cdb2e82a7eff3545a.zip
+rm 885a04a6b48be95ddd64770cdb2e82a7eff3545a.zip
+cd evmone-885a04a6b48be95ddd64770cdb2e82a7eff3545a
 rm -rf evmc
 mv ../evmc-${EVMC_VER} ./evmc
 mkdir ./evmc/.git
@@ -169,7 +168,7 @@ cmake --build build --parallel
 cd build
 $SUDO make install
 cd ../..
-rm -rf evmone-${EVMONE_VER}
+rm -rf evmone-885a04a6b48be95ddd64770cdb2e82a7eff3545a
 
 wget https://github.com/chfast/ethash/archive/e3e002ecc25ca699349aa62fa38e7b7cc5f653af.zip
 rm -rf ethash-e3e002ecc25ca699349aa62fa38e7b7cc5f653af
