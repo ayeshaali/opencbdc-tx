@@ -597,14 +597,29 @@ namespace cbdc::parsec::agent::rpc {
         Json::Value params,
         const server_type::result_callback_type& callback,
         evm_log_query& qry) -> bool {
+
+        Json::StreamWriterBuilder builder;
+        builder["indentation"] = "||"; // If you want whitespace-less output
+        const std::string output = Json::writeString(builder, params);
+
+        std::cerr << "ABJ DEBUG http_server::extract_evm_log_query_topics() Json::Value params:\n" << output << std::endl;
+
         auto parseError = false;
         if(params[0]["topics"].isArray()) {
             for(auto& val : params[0]["topics"]) {
-                auto maybe_topic = from_hex<evmc::bytes32>(val.asString());
-                if(maybe_topic) {
-                    qry.m_topics.push_back(maybe_topic.value());
+                if(val.isNull()) {
+                    // <TODO> Allow null elements in the topics array for now
+                    std::cerr << "ABJ DEBUG "
+                                 "http_server::extract_evm_log_query_topics() "
+                                 "Skipping a NULL topics elem"
+                              << std::endl;
                 } else {
-                    parseError = true;
+                   auto maybe_topic = from_hex<evmc::bytes32>(val.asString());
+                   if(maybe_topic) {
+                       qry.m_topics.push_back(maybe_topic.value());
+                   } else {
+                       parseError = true;
+                   }
                 }
             }
         }
@@ -699,12 +714,20 @@ namespace cbdc::parsec::agent::rpc {
 
         auto uint_block_count = static_cast<uint64_t>(block_count);
 
-        constexpr auto max_block_count = 100;
+        constexpr auto max_block_count = 5000;
         if(uint_block_count * qry.m_addresses.size() > max_block_count) {
+            std::cerr << "ABJ http_server::extract_evm_log_query_block() exceeded 100" << std::endl;
+            m_log->info("ABJ http_server::extract_evm_log_query_block() "
+                        "m_from_block, m_to_block, block_count, bcxaddr",
+                        static_cast<int64_t>(qry.m_from_block),
+                        static_cast<int64_t>(qry.m_to_block),
+                        block_count,
+                        uint_block_count * qry.m_addresses.size());
+
             ret["error"] = Json::Value();
             ret["error"]["code"] = error_code::block_range_too_large;
             ret["error"]["message"] = "The product of address count and block "
-                                      "range in your query cannot exceed 100";
+                                      "range in your query cannot exceed 5000";
             callback(ret);
             return false;
         }

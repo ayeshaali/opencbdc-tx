@@ -166,7 +166,8 @@ namespace cbdc::parsec::agent::runner {
         if(is_precompile(addr)) {
             // Precompiles have no code, but this should be
             // non-zero for the call to work
-            return 1;
+            // <ABJ> Why 1 instead of zero?
+            return 0;
         }
         auto maybe_code = get_account_code(addr, false);
         return maybe_code.value_or(evm_account_code{}).size();
@@ -208,6 +209,7 @@ namespace cbdc::parsec::agent::runner {
         }
 
         const auto n = std::min(buffer_size, code.size() - code_offset);
+        m_log->info("ABJ evm_host::copy_code() buffer_size, code.size(), code_offset, n:", buffer_size, code.size(), code_offset, n);
         if(n > 0) {
             std::copy_n(&code[code_offset], n, buffer_data);
         }
@@ -316,29 +318,39 @@ namespace cbdc::parsec::agent::runner {
                 ? msg.code_address
                 : msg.recipient;
 
-        const auto code_size = get_code_size(code_addr);
-        if(code_size == 0) {
-            // TODO: deduct simple send fixed gas amount
-            const auto gas_refund = 0;
-            auto res = evmc::make_result(evmc_status_code::EVMC_SUCCESS,
-                                         msg.gas,
-                                         gas_refund,
-                                         nullptr,
-                                         0);
+        auto code_buf = std::vector<uint8_t>{};
+        // About EVM Precompiled Contracts:
+        // https://www.evm.codes/precompiled
+        if(!is_precompile(code_addr)) {
+            const auto code_size = get_code_size(code_addr);
+            if(code_size == 0) {
+                // TODO: deduct simple send fixed gas amount
+                const auto gas_refund = 0;
+                auto res = evmc::make_result(evmc_status_code::EVMC_SUCCESS,
+                                             msg.gas,
+                                             gas_refund,
+                                             nullptr,
+                                             0);
 
-            // TODO: Is it possible to have a case where this is not a native
-            // value transfer (i.e. is else-block needed here)?
-            if(is_native_value_transfer) {
-                m_receipt.m_success = true;
+                // TODO: Is it possible to have a case where this is not a
+                // native value transfer (i.e. is else-block needed here)?
+                if(is_native_value_transfer) {
+                    m_receipt.m_success = true;
+                }
+
+                return evmc::Result(res);
             }
 
-            return evmc::Result(res);
+            code_buf.resize(code_size);
+            [[maybe_unused]] auto n
+                = copy_code(code_addr, 0, code_buf.data(), code_buf.size());
+            assert(n == code_size);
+        } else {
+            m_log->info("ABJ evm_host::get_code_size() is precompiled, addr:",
+                        to_hex(code_addr),
+                        ", check code_buf size zero:",
+                        code_buf.size());
         }
-
-        auto code_buf = std::vector<uint8_t>(code_size);
-        [[maybe_unused]] auto n
-            = copy_code(code_addr, 0, code_buf.data(), code_buf.size());
-        assert(n == code_size);
 
         auto inp = cbdc::buffer();
         inp.append(msg.input_data, msg.input_size);
