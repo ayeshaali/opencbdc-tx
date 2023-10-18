@@ -36,6 +36,8 @@ find_library(GTEST_LIBRARY gtest REQUIRED)
 find_library(GTEST_MAIN_LIBRARY gtest_main REQUIRED)
 find_package(benchmark REQUIRED)
 find_library(LUA_LIBRARY lua REQUIRED)
+find_library(FF_LIBRARY NAMES ff libff REQUIRED)
+find_library(GMP_LIBRARY gmp REQUIRED)
 find_library(KECCAK_LIBRARY keccak REQUIRED)
 find_library(EVMC_INSTRUCTIONS_LIBRARY evmc-instructions REQUIRED)
 find_library(EVMONE_LIBRARY evmone REQUIRED)
@@ -46,6 +48,7 @@ find_library(MHD_LIBRARY libmicrohttpd.a REQUIRED)
 set(LUA_LIBRARY "${LUA_LIBRARY}" "-ldl")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+message("ff: ${FF_LIBRARY}")
 
 include_directories(3rdparty 3rdparty/secp256k1/include /usr/lib /usr/local/lib /usr/local/include /opt/homebrew/include)
 
@@ -69,8 +72,7 @@ add_subdirectory(3rdparty)
 add_compile_options(-Wall
                     -Wextra
                     -pedantic
-                    -Werror
-                    -fno-exceptions)
+                    -Werror)
 
 add_compile_definitions(_NO_EXCEPTION)
 
@@ -89,3 +91,4 @@ add_subdirectory(tests)
 add_subdirectory(benchmarks)
 add_subdirectory(tools/bench)
 add_subdirectory(tools/shard-seeder)
+add_subdirectory(tools/tcash)
