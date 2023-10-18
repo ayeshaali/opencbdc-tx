@@ -6,7 +6,7 @@ namespace cbdc::parsec {
                              std::string leaves, 
                              uint64_t num_leaves)
                              : m_log(std::move(log)),
-                             _hasher(log) {
+                             _hasher(m_log) {
         for (size_t i = 0; i < num_leaves; i++) {
             m_leaves.push_back(leaves.substr(i*LEAF_LENGTH*2, LEAF_LENGTH*2));
         }
@@ -15,6 +15,8 @@ namespace cbdc::parsec {
     auto merkle_tree::insert(std::string leaf) -> std::string {
         std::vector<std::string> leaves_copy(m_leaves); 
         leaves_copy.push_back(leaf);
+
+        m_log->trace(leaf);
 
         // Changed from using subtrees:
         // Starting with the leaves, hash up every pair of nodes into the next level of the MT

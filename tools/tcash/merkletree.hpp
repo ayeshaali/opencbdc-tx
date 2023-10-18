@@ -26,12 +26,11 @@ namespace cbdc::parsec {
 
       private:
         std::shared_ptr<logging::log> m_log;
-
+        mimc _hasher;
         std::vector<std::string> m_leaves;
 
         auto zeros(int i) -> std::string;
 
-        mimc _hasher;
 
         inline static std::unordered_map<int, std::string> zeros_map = {
           {0, "2fe54c60d3acabf3343a35b6eba15db4821b340f76e741e2249685ed4899af6c"},
