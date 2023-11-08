@@ -28,7 +28,8 @@ namespace cbdc::parsec {
         libff::alt_bn128_Fr fR = libff::alt_bn128_Fr(R);
         libff::alt_bn128_Fr fRight = libff::alt_bn128_Fr(_right);
 
-        std::tie(R,C) = MiMC5Sponge((fR+fRight).as_bigint(), C, bigint_r("0"));
+        bigint_r R_sum = (fR+fRight).as_bigint();
+        std::tie(R,C) = MiMC5Sponge(R_sum, C, bigint_r("0"));
 
         // convert back to hex
         mpz_t output;

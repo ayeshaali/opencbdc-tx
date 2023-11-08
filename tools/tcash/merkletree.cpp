@@ -29,7 +29,7 @@ namespace cbdc::parsec {
                 if (j+1 < level_length) {
                     hash = _hasher.hash(leaves_copy[j], leaves_copy[j+1]);
                 } else {
-                    hash = _hasher.hash(leaves_copy[j], zeros(i));
+                    hash = _hasher.hash(leaves_copy[j], zeros(i+1));
                 }
                 next_level.push_back(hash);
             }
