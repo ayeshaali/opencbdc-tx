@@ -8,7 +8,8 @@ add_executable(tcash tcash.cpp
                      mimc.cpp)
 add_executable(test test.cpp
                      merkletree.cpp
-                     mimc.cpp)
+                     mimc.cpp
+                     verifier.cpp)
 target_link_libraries(tcash broker
                                 directory
                                 runtime_locking_shard
