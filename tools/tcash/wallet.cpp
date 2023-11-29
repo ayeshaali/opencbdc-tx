@@ -37,7 +37,7 @@ namespace cbdc::parsec {
         -> bool {
         auto init_account = cbdc::buffer();
         auto ser = cbdc::buffer_serializer(init_account);
-        ser << value << m_sequence;
+        ser << value;
         auto res = put_row(m_broker,
                            m_account_key,
                            init_account,
@@ -54,56 +54,34 @@ namespace cbdc::parsec {
         return m_pubkey;
     }
 
-    auto account_wallet::deposit(uint64_t amount,
+    auto account_wallet::deposit(std::string note,
                              const std::function<void(bool)>& result_callback)
         -> bool {
-        if(amount > m_balance) {
-            return false;
-        }
-        auto params = make_deposit_params(amount);
+        auto params = cbdc::buffer();
+        params.append(m_pubkey.data(), m_pubkey.size());
+        params.append(&note, sizeof(note));
         return execute_params(m_TC_deposit_contract_key, params, false, result_callback);
     }
 
-    auto account_wallet::withdraw(cbdc::buffer note,
-                             const std::function<void(bool)>& result_callback)
+    auto account_wallet::withdraw(std::string proof, 
+                                  std::string _root, 
+                                  std::string _nullifierHash, 
+                                  std::string _recipient, 
+                                  std::string _relayer, 
+                                  std::string _fee,
+                                  std::string _refund,
+                                  const std::function<void(bool)>& result_callback)
         -> bool {
-        auto params = make_withdraw_params(note);
+        auto params = cbdc::buffer();
+        params.append(m_pubkey.data(), m_pubkey.size());
+        params.append(&proof, sizeof(proof));
+        params.append(&_root, sizeof(_root));
+        params.append(&_nullifierHash, sizeof(_nullifierHash));
+        params.append(&_recipient, sizeof(_recipient));
+        params.append(&_relayer, sizeof(_relayer));
+        params.append(&_fee, sizeof(_fee));
+        params.append(&_refund, sizeof(_refund));
         return execute_params(m_TC_withdraw_contract_key, params, false, result_callback);
-    }
-
-    auto account_wallet::make_deposit_params(uint64_t amount) const
-        -> cbdc::buffer {
-        auto params = cbdc::buffer();
-        params.append(m_pubkey.data(), m_pubkey.size());
-        auto nullifier = 10;
-        auto secret = 10;
-        auto deposit = create_deposit(nullifier, secret);
-        params.append(&amount, sizeof(amount));
-        params.append(&m_sequence, sizeof(m_sequence));
-        return params;
-    }
-
-    auto account_wallet::make_withdraw_params(cbdc::buffer note) const
-        -> cbdc::buffer {
-        auto params = cbdc::buffer();
-        params.append(m_pubkey.data(), m_pubkey.size());
-        auto deser = cbdc::buffer_serializer(note);
-        int nullifier = 10;
-        int secret = 10;
-        uint64_t amount = 0;
-        deser >> amount >> nullifier >> secret;
-        auto deposit = create_deposit(nullifier, secret);
-        // params.append(&deposit.commitment.to_hex(), sizeof(deposit.commitment.to_hex()));
-        params.append(&amount, sizeof(amount));
-        params.append(&m_sequence, sizeof(m_sequence));
-        return params;
-    }
-
-    auto account_wallet::create_deposit(int nullifier, int secret) const -> Deposit {
-        struct Deposit d;
-        d.nullifier = nullifier;
-        d.secret = secret;
-        return d;
     }
 
     auto account_wallet::execute_params(
@@ -122,17 +100,11 @@ namespace cbdc::parsec {
                     auto it = updates.find(m_account_key);
                     assert(it != updates.end());
                     auto deser = cbdc::buffer_serializer(it->second);
-                    deser >> m_balance >> m_sequence;
+                    deser >> m_balance;
                 }
                 result_callback(success);
             });
         return send_success;
-    }
-
-    auto account_wallet::update_balance(
-        const std::function<void(bool)>& result_callback) -> bool {
-        auto params = make_deposit_params(0);
-        return execute_params(m_TC_deposit_contract_key, params, false, result_callback);
     }
 
     auto account_wallet::get_balance() const -> uint64_t {

@@ -16,6 +16,21 @@
 #include <random>
 #include <thread>
 
+std::vector<std::string> split(std::string s, std::string delimiter) {
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    std::string token;
+    std::vector<std::string> res;
+
+    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+        token = s.substr (pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back (token);
+    }
+
+    res.push_back (s.substr (pos_start));
+    return res;
+}
+
 auto main(int argc, char** argv) -> int {
     auto log
         = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
@@ -180,21 +195,62 @@ auto main(int argc, char** argv) -> int {
 
     log->trace("Added new accounts");
     
-    log->trace("Depositing phase");
-    for(size_t i = 0; i < n_wallets; i++) {
-        log->trace(i, " depositing");
-        ret = wallets[i].deposit(
-            100,
-            [&, i](bool res) {
-                if(!res) {
-                    log->fatal("Deposit request error");
-                }
-                log->trace(i, " done depositing");
-            });
-        if(!ret) {
-            log->fatal("Deposit request failed");
+    std::fstream myfile;
+    myfile.open("sample_sequence.txt", std::ios::in);
+
+    if (myfile.is_open()) {
+        std::string action;
+        while (getline(myfile, action)) {
+            std::vector<std::string> act = split(action, ",");
+            std::string op = act[0];
+            int wallet_index = stoi(act[1]);
+            if (!op.compare("0")) {
+                wallets[wallet_index].deposit(
+                    act[2],
+                    [&, wallet_index](bool res) {
+                        if(!res) {
+                            log->fatal("Deposit request error");
+                        }
+                        log->trace(wallet_index, "done depositing");
+                    }
+                );
+            } else {
+                wallets[wallet_index].withdraw(
+                    act[2],
+                    act[3],
+                    act[4],
+                    act[5],
+                    act[6],
+                    act[7],
+                    act[8],
+                    [&, wallet_index](bool res) {
+                        if(!res) {
+                            log->fatal("Withdraw request error");
+                        }
+                        log->trace(wallet_index, "done withdrawing");
+                    }
+                );
+            }
         }
+        myfile.close();
     }
+
+
+    // log->trace("Depositing phase");
+    // for(size_t i = 0; i < n_wallets; i++) {
+    //     log->trace(i, " depositing");
+    //     ret = wallets[i].deposit(
+    //         100,
+    //         [&, i](bool res) {
+    //             if(!res) {
+    //                 log->fatal("Deposit request error");
+    //             }
+    //             log->trace(i, " done depositing");
+    //         });
+    //     if(!ret) {
+    //         log->fatal("Deposit request failed");
+    //     }
+    // }
 
     // log->trace("Withdrawing phase");
     // for(size_t i = 0; i < n_wallets; i++) {

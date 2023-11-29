@@ -41,16 +41,15 @@ namespace cbdc::parsec {
         /// \param value initial balance of the new account.
         /// \param result_callback function to call with initialization result.
         /// \return true if the new account was created successfully.
-        auto init(uint64_t value,
-                  const std::function<void(bool)>& result_callback) -> bool;
+        auto init(uint64_t value, const std::function<void(bool)>& result_callback) -> bool;
         
         /// Deposit the given amount from the account managed by this wallet to the
         /// TC contract. Blocks until the contract execution has completed.
         /// Updates the internal account balance with the most recent balance.
-        /// \param amount amount of coins to deposit.
+        /// \param note amount of coins to deposit.
         /// \param result_callback function to call with pay result.
         /// \return true if the transaction was successful.
-        auto deposit(uint64_t amount,
+        auto deposit(std::string note,
                  const std::function<void(bool)>& result_callback) -> bool;
         
         /// Withdraw the given bank note from the TC contract to this wallet to the
@@ -59,18 +58,18 @@ namespace cbdc::parsec {
         /// \param note preimage of commitment (nullifier + secret)
         /// \param result_callback function to call with pay result.
         /// \return true if the transaction was successful.
-        auto withdraw(cbdc::buffer note,
-                 const std::function<void(bool)>& result_callback) -> bool;
+        auto withdraw(std::string proof, 
+                      std::string _root, 
+                      std::string _nullifierHash, 
+                      std::string _recipient, 
+                      std::string _relayer, 
+                      std::string _fee,
+                      std::string _refund,
+                      const std::function<void(bool)>& result_callback) -> bool;
 
         /// Return the public key associated with this account.
         /// \return public key.
         [[nodiscard]] auto get_pubkey() const -> pubkey_t;
-
-        /// Request an update on the balance held by this account.
-        /// \param result_callback function to call with balance update result.
-        /// \return true if the balance was requested successfully.
-        auto update_balance(const std::function<void(bool)>& result_callback)
-            -> bool;
 
         /// Return the balance held in this account as of the most recent
         /// balance update.
@@ -80,7 +79,6 @@ namespace cbdc::parsec {
       private:
         privkey_t m_privkey{};
         pubkey_t m_pubkey{};
-        uint64_t m_sequence{};
         uint64_t m_balance{};
 
         std::shared_ptr<logging::log> m_log;
@@ -94,15 +92,7 @@ namespace cbdc::parsec {
                         decltype(&secp256k1_context_destroy)>
             m_secp{secp256k1_context_create(SECP256K1_CONTEXT_SIGN),
                    &secp256k1_context_destroy};
-
-        [[nodiscard]] auto make_deposit_params(uint64_t amount) const
-            -> cbdc::buffer;
         
-        [[nodiscard]] auto make_withdraw_params(cbdc::buffer note) const
-            -> cbdc::buffer;
-        
-        [[nodiscard]] auto create_deposit(int nullifier, int hash) const -> Deposit;
-
         auto execute_params(cbdc::buffer contract_key,
                             cbdc::buffer params,
                             bool dry_run,
