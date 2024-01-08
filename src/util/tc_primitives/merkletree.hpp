@@ -7,7 +7,7 @@
 #include "mimc.hpp"
 #include <string>
 
-namespace cbdc::parsec {
+namespace cbdc {
     class merkle_tree {
       public:
         /// Constructor.
@@ -65,4 +65,3 @@ namespace cbdc::parsec {
         }; 
     };
 }
-

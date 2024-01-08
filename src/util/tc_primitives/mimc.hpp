@@ -5,7 +5,7 @@
 
 typedef libff::bigint<libff::alt_bn128_r_limbs> bigint_r;
 
-namespace cbdc::parsec {
+namespace cbdc {
     class mimc {
         public:
             mimc(std::shared_ptr<logging::log> log);

@@ -59,7 +59,8 @@ namespace cbdc::parsec {
         -> bool {
         auto params = cbdc::buffer();
         params.append(m_pubkey.data(), m_pubkey.size());
-        params.append(&note, sizeof(note));
+        params.append(note.c_str(), note.size());
+        m_log->trace(note, note.size());
         return execute_params(m_TC_deposit_contract_key, params, false, result_callback);
     }
 
@@ -97,10 +98,8 @@ namespace cbdc::parsec {
                 auto success = std::holds_alternative<agent::return_type>(res);
                 if(success) {
                     auto updates = std::get<agent::return_type>(res);
-                    auto it = updates.find(m_account_key);
-                    assert(it != updates.end());
-                    auto deser = cbdc::buffer_serializer(it->second);
-                    deser >> m_balance;
+                    for (auto it : updates) 
+                        m_log->trace(it.first.c_str());
                 }
                 result_callback(success);
             });

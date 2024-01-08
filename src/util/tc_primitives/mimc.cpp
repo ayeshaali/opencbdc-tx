@@ -2,10 +2,9 @@
 #include <string>
 #include <gmp.h>
 
-namespace cbdc::parsec {
+namespace cbdc {
     mimc::mimc(std::shared_ptr<logging::log> log) 
               : m_log(std::move(log)) {
-        m_log->trace("hasher");
         libff::alt_bn128_pp::init_public_params();
     }
 
@@ -35,7 +34,7 @@ namespace cbdc::parsec {
         mpz_t output;
         mpz_init(output);
         R.to_mpz(output);
-        char* hash = mpz_get_str(NULL, 16, output);;
+        char* hash = mpz_get_str(NULL, 16, output);
         return hash;
     }
 

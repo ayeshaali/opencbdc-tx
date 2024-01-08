@@ -5,7 +5,6 @@ include_directories(../../src ../../3rdparty ../../3rdparty/secp256k1/include)
 add_executable(tcash tcash.cpp
                      wallet.cpp)
 add_executable(test test.cpp)
-add_subdirectory(tc_primitives)
 
 target_link_libraries(tcash broker
                             directory

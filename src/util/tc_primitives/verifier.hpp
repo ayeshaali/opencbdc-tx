@@ -35,7 +35,7 @@ struct VerifyingKey {
         {}
 };
 
-namespace cbdc::parsec {
+namespace cbdc {
     class verifier {
         public:
             verifier(std::shared_ptr<logging::log> log);

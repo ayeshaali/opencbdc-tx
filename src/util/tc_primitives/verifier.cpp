@@ -8,7 +8,7 @@ struct Proof {
     libff::alt_bn128_G1 C;
 };
 
-namespace cbdc::parsec {
+namespace cbdc {
     verifier::verifier(std::shared_ptr<logging::log> log) 
               : m_log(std::move(log)) {
         m_log->trace("verifier");

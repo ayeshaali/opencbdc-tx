@@ -1,23 +1,25 @@
 function gen_bytecode()
     tc_deposit_contract = function(param)
         from, commitment = string.unpack("c32 c64", param)
-
         function insert(commitment)
             num_leaves_data = coroutine.yield("num_leaves")
             num_leaves = 0 
             if string.len(num_leaves_data) > 0 then
-                num_leaves = string.unpack("I32", num_leaves_data) 
-            end
-            leaves = ""
-            for i=0,num_leaves do
-                leaf_data = coroutine.yield("leaf_" .. i)
-                leaves = leaves .. string.unpack("c64", leaf_data) 
+                num_leaves = string.unpack("I8", num_leaves_data) 
             end 
-            root = MT_insert(num_leaves, leaves, commitment)
+            leaves = ""
+            if num_leaves > 0 then 
+                for i=0,num_leaves-1 do
+                    leaf_data = coroutine.yield("leaf_" .. i)
+                    leaves = leaves .. string.unpack("c64", leaf_data) 
+                end 
+            end 
+            root = insert_MT(num_leaves, leaves, commitment)
+            print(root)
             updates = {}
             updates["root_" .. root] = string.pack("c64", root) 
-            updates["leaf_" .. (num_leaves+1)] = string.pack("c64", commitment) 
-            updates["num_leaves"] = string.pack("I32", num_leaves+1) 
+            updates["leaf_" .. num_leaves] = string.pack("c64", commitment) 
+            updates["num_leaves"] = string.pack("I8", num_leaves+1) 
             return updates
         end 
 
@@ -39,14 +41,14 @@ function gen_bytecode()
             return updates
         end 
 
-        updates = insert_MT(commitment)
-        updates = update_pool(updates)
-        updates = update_account(updates, from)
+        updates = insert(commitment)
+        -- updates = update_pool(updates)
+        -- updates = update_account(updates, from)
         return updates
     end
 
     tc_withdraw_contract = function(param)
-        proof, root, nullifierHash, recipient, fee, refund = string.unpack("c512 c64 c64 c40 c40 I8 I8", param)
+        proof, root, nullifierHash, recipient, fee, refund = string.unpack("c24 c24 c24 c24 c24 c24 c24", param)
         root_data = coroutine.yield("root_" .. root)
         if not (string.len(root_data) > 0) then
             error("root does not exist")

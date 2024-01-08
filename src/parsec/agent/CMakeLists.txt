@@ -25,6 +25,9 @@ target_link_libraries(agentd broker
                              common
                              crypto
                              secp256k1
+                             tc_primitives
+                             ${FF_LIBRARY}
+                             ${GMP_LIBRARY}
                              ${LUA_LIBRARY}
                              ${JSON_LIBRARY}
                              ${MHD_LIBRARY}

@@ -8,6 +8,8 @@
 #include "crypto/sha256.h"
 #include "util/common/keys.hpp"
 #include "util/common/variant_overloaded.hpp"
+#include "util/tc_primitives/merkletree.hpp"
+#include "util/tc_primitives/verifier.hpp"
 
 #include <cassert>
 #include <secp256k1.h>
@@ -59,6 +61,8 @@ namespace cbdc::parsec::agent::runner {
         luaL_openlibs(m_state.get());
 
         lua_register(m_state.get(), "check_sig", &lua_runner::check_sig);
+        lua_register(m_state.get(), "verify_proof", &lua_runner::verify_proof);
+        lua_register(m_state.get(), "insert_MT", &lua_runner::insert_MT);
 
         static constexpr auto function_name = "contract";
 
@@ -263,6 +267,58 @@ namespace cbdc::parsec::agent::runner {
                                        &pubkey)
            != 1) {
             lua_pushliteral(L, "invalid signature");
+            lua_error(L);
+        }
+
+        return 0;
+    }
+
+    auto lua_runner::insert_MT(lua_State* L) -> int {
+        int n = lua_gettop(L);
+        if(n != 3) {
+            lua_pushliteral(L, "not enough arguments for inserting into MT");
+            lua_error(L);
+        }
+        const auto num_leaves = lua_tonumber(L, 1);
+
+        size_t sz{};
+        const auto* str = lua_tolstring(L, 2, &sz);
+        assert(str != nullptr);
+        std::string leaves = std::string(str);
+
+        auto log
+        = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
+        cbdc::merkle_tree MT = cbdc::merkle_tree(log, leaves, num_leaves);
+
+        str = lua_tolstring(L, 3, &sz);
+        assert(str != nullptr);
+        std::string new_leaf = std::string(str);
+        std::string root = MT.insert(new_leaf);
+
+        lua_pushstring(L, root.c_str());
+        return 1;
+    }
+
+    auto lua_runner::verify_proof(lua_State* L) -> int {
+        int n = lua_gettop(L);
+        if(n != 7) {
+            lua_pushliteral(L, "not enough arguments for verifying proof");
+            lua_error(L);
+        }
+
+        std::string args[7];
+        for (int i = 1; i < 7; i++) {
+            size_t sz{};
+            const auto* str = lua_tolstring(L, i, &sz);
+            assert(str != nullptr);
+            args[i-1] = std::string(str);
+        }
+        auto log
+        = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
+        cbdc::verifier v =  cbdc::verifier(log);
+        bool result = v.verifyProof(args[0], args[1], args[2], args[3], args[4], stoi(args[5]), stoi(args[6]));
+        if(result == 0) {
+            lua_pushliteral(L, "invalid proof");
             lua_error(L);
         }
 

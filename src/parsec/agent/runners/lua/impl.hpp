@@ -53,6 +53,8 @@ namespace cbdc::parsec::agent::runner {
         handle_try_lock(const broker::interface::try_lock_return_type& res);
 
         static auto check_sig(lua_State* L) -> int;
+        static auto verify_proof(lua_State* L) -> int;
+        static auto insert_MT(lua_State* L) -> int;
     };
 }
 

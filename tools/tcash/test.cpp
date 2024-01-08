@@ -3,8 +3,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "tc_primitives/merkletree.hpp"
-#include "tc_primitives/verifier.hpp"
+#include "util/tc_primitives/merkletree.hpp"
+#include "util/tc_primitives/verifier.hpp"
 
 #include <lua.hpp>
 #include <iostream>

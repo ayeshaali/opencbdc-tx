@@ -205,6 +205,8 @@ auto main(int argc, char** argv) -> int {
             std::string op = act[0];
             int wallet_index = stoi(act[1]);
             if (!op.compare("0")) {
+                log->trace(op);
+                log->trace(wallet_index);
                 wallets[wallet_index].deposit(
                     act[2],
                     [&, wallet_index](bool res) {
