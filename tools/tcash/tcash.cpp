@@ -216,23 +216,24 @@ auto main(int argc, char** argv) -> int {
                         log->trace(wallet_index, "done depositing");
                     }
                 );
-            } else {
-                wallets[wallet_index].withdraw(
-                    act[2],
-                    act[3],
-                    act[4],
-                    act[5],
-                    act[6],
-                    act[7],
-                    act[8],
-                    [&, wallet_index](bool res) {
-                        if(!res) {
-                            log->fatal("Withdraw request error");
-                        }
-                        log->trace(wallet_index, "done withdrawing");
-                    }
-                );
-            }
+            } 
+            // else {
+            //     wallets[wallet_index].withdraw(
+            //         act[2],
+            //         act[3],
+            //         act[4],
+            //         act[5],
+            //         act[6],
+            //         act[7],
+            //         act[8],
+            //         [&, wallet_index](bool res) {
+            //             if(!res) {
+            //                 log->fatal("Withdraw request error");
+            //             }
+            //             log->trace(wallet_index, "done withdrawing");
+            //         }
+            //     );
+            // }
         }
         myfile.close();
     }

@@ -45,7 +45,7 @@ auto main() -> int {
     // std::string hash = hasher.hash(left, right);
     // log->trace(hash);
 
-    cbdc::parsec::verifier v =  cbdc::parsec::verifier(log);
+    cbdc::verifier v =  cbdc::verifier(log);
     std::fstream myfile;
     myfile.open("sample_proofs.txt", std::ios::in);
 

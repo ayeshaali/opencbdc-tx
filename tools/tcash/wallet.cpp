@@ -75,13 +75,13 @@ namespace cbdc::parsec {
         -> bool {
         auto params = cbdc::buffer();
         params.append(m_pubkey.data(), m_pubkey.size());
-        params.append(&proof, sizeof(proof));
-        params.append(&_root, sizeof(_root));
-        params.append(&_nullifierHash, sizeof(_nullifierHash));
-        params.append(&_recipient, sizeof(_recipient));
-        params.append(&_relayer, sizeof(_relayer));
-        params.append(&_fee, sizeof(_fee));
-        params.append(&_refund, sizeof(_refund));
+        params.append(proof.c_str(), proof.size());
+        params.append(_root.c_str(), _root.size());
+        params.append(_nullifierHash.c_str(), _nullifierHash.size());
+        params.append(_recipient.c_str(), _recipient.size());
+        params.append(_relayer.c_str(), _relayer.size());
+        params.append(_fee.c_str(), _fee.size());
+        params.append(_refund.c_str(), _refund.size());
         return execute_params(m_TC_withdraw_contract_key, params, false, result_callback);
     }
 
@@ -96,11 +96,12 @@ namespace cbdc::parsec {
             dry_run,
             [&, result_callback](agent::interface::exec_return_type res) {
                 auto success = std::holds_alternative<agent::return_type>(res);
-                if(success) {
-                    auto updates = std::get<agent::return_type>(res);
-                    for (auto it : updates) 
-                        m_log->trace(it.first.c_str());
-                }
+                m_log->trace("resulted");
+                // if(success) {
+                //     auto updates = std::get<agent::return_type>(res);
+                //     for (auto it : updates) 
+                //         m_log->trace(it.first.c_str());
+                // }
                 result_callback(success);
             });
         return send_success;
