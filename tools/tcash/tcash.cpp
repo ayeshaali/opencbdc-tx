@@ -156,6 +156,7 @@ auto main(int argc, char** argv) -> int {
         }
         agents.emplace_back(agent);
     }
+    log->trace("Initialized agents");
 
     auto wallets = std::vector<cbdc::parsec::account_wallet>();
     for(size_t i = 0; i < n_wallets; i++) {
@@ -198,6 +199,9 @@ auto main(int argc, char** argv) -> int {
     std::fstream myfile;
     myfile.open("sample_sequence.txt", std::ios::in);
 
+    auto running = std::atomic_bool(true);
+    auto in_flight = std::atomic<size_t>();
+    auto count = 0;
     if (myfile.is_open()) {
         std::string action;
         while (getline(myfile, action)) {
@@ -205,108 +209,83 @@ auto main(int argc, char** argv) -> int {
             std::string op = act[0];
             int wallet_index = stoi(act[1]);
             if (!op.compare("0")) {
-                log->trace(op);
-                log->trace(wallet_index);
-                wallets[wallet_index].deposit(
+                count+=1;
+                log->trace("start deposit", count, "for wallet", wallet_index);
+                in_flight++;
+                auto res = wallets[wallet_index].deposit(
                     act[2],
-                    [&, wallet_index](bool res) {
-                        if(!res) {
+                    [&, wallet_index, count](bool ret) {
+                        log->trace("second callback");
+                        if(!ret) {
                             log->fatal("Deposit request error");
                         }
-                        log->trace(wallet_index, "done depositing");
+                        log->trace("finished deposit", count, "for wallet", wallet_index);
                     }
                 );
+                if(!res) {
+                    log->fatal("Deposit request failed");
+                }
+                in_flight--;
             } 
-            // else {
-            //     wallets[wallet_index].withdraw(
-            //         act[2],
-            //         act[3],
-            //         act[4],
-            //         act[5],
-            //         act[6],
-            //         act[7],
-            //         act[8],
-            //         [&, wallet_index](bool res) {
-            //             if(!res) {
-            //                 log->fatal("Withdraw request error");
-            //             }
-            //             log->trace(wallet_index, "done withdrawing");
-            //         }
-            //     );
-            // }
         }
+        log->trace("finished");
         myfile.close();
     }
 
+    auto start_time = std::chrono::high_resolution_clock::now();
+    constexpr auto test_duration = std::chrono::seconds(30);
+    while(in_flight > 0 || running) {
+        auto now = std::chrono::high_resolution_clock::now();
+        if(now - start_time > test_duration) {
+            running = false;
+        }
+    }
 
-    // log->trace("Depositing phase");
-    // for(size_t i = 0; i < n_wallets; i++) {
-    //     log->trace(i, " depositing");
-    //     ret = wallets[i].deposit(
-    //         100,
-    //         [&, i](bool res) {
+
+    // if (myfile.is_open()) {
+    //     std::string action;
+    //     while (getline(myfile, action)) {
+    //         std::vector<std::string> act = split(action, ",");
+    //         std::string op = act[0];
+    //         int wallet_index = stoi(act[1]);
+    //         if (!op.compare("0")) {
+    //             log->trace(op);
+    //             log->trace(wallet_index);
+    //             auto res = wallets[wallet_index].deposit(
+    //                 act[2],
+    //                 [&, wallet_index](bool ret) {
+    //                     if(!ret) {
+    //                         log->fatal("Deposit request error");
+    //                     }
+    //                     log->trace(wallet_index, "done depositing");
+    //                 }
+    //             );
+    //             log->trace(res);
     //             if(!res) {
-    //                 log->fatal("Deposit request error");
+    //                 log->fatal("Deposit request failed");
     //             }
-    //             log->trace(i, " done depositing");
-    //         });
-    //     if(!ret) {
-    //         log->fatal("Deposit request failed");
-    //     }
-    // }
-
-    // log->trace("Withdrawing phase");
-    // for(size_t i = 0; i < n_wallets; i++) {
-    //     log->trace(i, " depositing");
-    //     auto res = wallets[i].withdraw(
-    //         100,
-    //         [&, i](bool ret) {
-    //             if(!ret) {
-    //                 log->fatal("Deposit request error");
-    //             }
-    //             log->trace(i, " done depositing");
-    //         });
-    //     if(!res) {
-    //         log->fatal("Deposit request failed");
-    //     }
-    // }
-    
-    // log->trace("Checking balances");
-
-    // auto tot = std::atomic<uint64_t>{};
-    // init_count = 0;
-    // init_error = false;
-    // for(size_t i = 0; i < n_wallets; i++) {
-    //     auto res = wallets[i].update_balance([&, i](bool ret) {
-    //         if(!ret) {
-    //             init_error = true;
-    //         } else {
-    //             tot += wallets[i].get_balance();
-    //             init_count++;
+    //         } 
+    //         else {
+    //             wallets[wallet_index].withdraw(
+    //                 act[2],
+    //                 act[3],
+    //                 act[4],
+    //                 act[5],
+    //                 act[6],
+    //                 act[7],
+    //                 act[8],
+    //                 [&, wallet_index](bool res) {
+    //                     if(!res) {
+    //                         log->fatal("Withdraw request error");
+    //                     }
+    //                     log->trace(wallet_index, "done withdrawing");
+    //                 }
+    //             );
     //         }
-    //     });
-    //     if(!res) {
-    //         init_error = true;
-    //         break;
     //     }
+    //     log->trace("finished");
+    //     myfile.close();
     // }
-
-    // for(size_t count = 0;
-    //     init_count < n_wallets && !init_error && count < timeout;
-    //     count++) {
-    //     std::this_thread::sleep_for(wait_time);
-    // }
-
-    // if(init_count < n_wallets || init_error) {
-    //     log->error("Error updating balances");
-    //     return 2;
-    // }
-
-    // if(tot != init_balance * n_wallets) {
-    //     return 3;
-    // }
-
-    // log->trace("Checked balances");
 
     return 0;
 }

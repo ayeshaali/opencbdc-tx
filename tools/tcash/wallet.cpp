@@ -60,7 +60,7 @@ namespace cbdc::parsec {
         auto params = cbdc::buffer();
         params.append(m_pubkey.data(), m_pubkey.size());
         params.append(note.c_str(), note.size());
-        m_log->trace(note, note.size());
+        m_log->trace("deposit note", note);
         return execute_params(m_TC_deposit_contract_key, params, false, result_callback);
     }
 
@@ -96,7 +96,7 @@ namespace cbdc::parsec {
             dry_run,
             [&, result_callback](agent::interface::exec_return_type res) {
                 auto success = std::holds_alternative<agent::return_type>(res);
-                m_log->trace("resulted");
+                m_log->trace("first callback");
                 // if(success) {
                 //     auto updates = std::get<agent::return_type>(res);
                 //     for (auto it : updates) 

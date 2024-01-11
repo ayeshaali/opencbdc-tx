@@ -9,19 +9,15 @@ function gen_bytecode()
                 num_leaves = string.unpack("I8", num_leaves_data) 
             end
             leaves = ""
+            print(num_leaves)
             if num_leaves > 0 then 
                 for i=0,num_leaves-1 do
                     leaf_name = "leaf_" .. i
                     leaf_data = coroutine.yield(leaf_name)
-                    -- while string.len(leaf_data) <= 0 do
-                    --     leaf_data = coroutine.yield(leaf_name)
-                    -- end
                     print(leaf_name)
                     leaves = leaves .. string.unpack("c64", leaf_data) 
                 end 
             end 
-            leaf_name = "leaf_" .. num_leaves
-            leaf_data = coroutine.yield(leaf_name)
 
             root = insert_MT(num_leaves, leaves, commitment)
             root_update = "root_" .. root
@@ -54,10 +50,24 @@ function gen_bytecode()
             return updates
         end 
 
+        function dump(o)
+            if type(o) == 'table' then
+               local s = '{ '
+               for k,v in pairs(o) do
+                  if type(k) ~= 'number' then k = '"'..k..'"' end
+                  s = s .. '['..k..'] = ' .. dump(v) .. ','
+               end
+               return s .. '} '
+            else
+               return tostring(o)
+            end
+        end
+
         updates = insert(commitment)
         print("deposited")
         updates = update_balances(updates, from)
         print("balanced")
+        -- print(dump(updates))
         return updates
     end
 
