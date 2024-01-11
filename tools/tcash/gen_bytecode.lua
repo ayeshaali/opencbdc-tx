@@ -22,6 +22,9 @@ function gen_bytecode()
             root = insert_MT(num_leaves, leaves, commitment)
             root_update = "root_" .. root
             leaf_update = "leaf_" .. num_leaves
+
+            leaf_data = coroutine.yield(leaf_update)
+            root_data = coroutine.yield(learoot_updatef_name)
             
             updates = {}
             updates[root_update] = string.pack("c64", root) 
