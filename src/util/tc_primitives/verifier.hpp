@@ -53,11 +53,12 @@ namespace cbdc {
             libff::alt_bn128_Fq p[8]; 
             struct VerifyingKey vk;
 
-            auto constructInputList(std::string _root, 
+            void constructInputList(bigint_r (&inputs)[6], 
+                                    std::string _root, 
                                     std::string _nullifierHash, 
                                     std::string _recipient, 
                                     std::string _relayer, 
                                     int _fee,
-                                    int _refund) -> bigint_r*;
+                                    int _refund);
     };
 }

@@ -29,10 +29,11 @@ namespace cbdc {
             mpz_init(_mpz_p);
             mpz_set_str(_mpz_p, proof.substr(i*64, 64).c_str(), 16);
             p[i] = libff::alt_bn128_Fq(bigint_q(_mpz_p));
+            mpz_clear(_mpz_p);
         }
 
-        bigint_r* inputs;
-        inputs = constructInputList(_root, _nullifierHash, _recipient, _relayer, _fee, _refund);
+        bigint_r inputs[6];
+        constructInputList(inputs, _root, _nullifierHash, _recipient, _relayer, _fee, _refund);
 
         struct Proof _proof = {
             libff::alt_bn128_G1(p[0], p[1], libff::alt_bn128_Fq::one()),
@@ -73,12 +74,13 @@ namespace cbdc {
         return libff::alt_bn128_final_exponentiation(x) == libff::alt_bn128_GT::one();
     }
 
-    auto verifier::constructInputList(std::string _root, 
+    void verifier::constructInputList(bigint_r (&inputs)[6], 
+                            std::string _root, 
                             std::string _nullifierHash, 
                             std::string _recipient, 
                             std::string _relayer, 
                             int _fee,
-                            int _refund) -> bigint_r* {   
+                            int _refund) {   
         mpz_t _mpz_root;
         mpz_init(_mpz_root);
         mpz_set_str(_mpz_root, _root.c_str(), 16);
@@ -95,15 +97,16 @@ namespace cbdc {
         mpz_init(_mpz_relayer);
         mpz_set_str(_mpz_relayer, _relayer.c_str(), 16);
 
-        // convert left and right into bigInt
-        bigint_r int_root = bigint_r(_mpz_root);
-        bigint_r int_nullifier = bigint_r(_mpz_nullifier);      
-        bigint_r int_recipient = bigint_r(_mpz_recipient);      
-        bigint_r int_relayer = bigint_r(_mpz_relayer);          
-        bigint_r int_fee = bigint_r(_fee);          
-        bigint_r int_refund = bigint_r(_refund);   
+        inputs[0] = bigint_r(_mpz_root);
+        inputs[1] = bigint_r(_mpz_nullifier);      
+        inputs[2] = bigint_r(_mpz_recipient);      
+        inputs[3] = bigint_r(_mpz_relayer);          
+        inputs[4] = bigint_r(_fee);          
+        inputs[5] = bigint_r(_refund);   
 
-        static bigint_r inputs[6] = {int_root, int_nullifier, int_recipient, int_relayer, int_fee, int_refund};
-        return inputs;
+        mpz_clear(_mpz_root);
+        mpz_clear(_mpz_nullifier);
+        mpz_clear(_mpz_recipient);
+        mpz_clear(_mpz_relayer);
     }
 }
