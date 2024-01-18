@@ -34,7 +34,17 @@ namespace cbdc {
         mpz_t output;
         mpz_init(output);
         R.to_mpz(output);
-        char* hash = mpz_get_str(NULL, 16, output);
+        
+        char hash[66];
+        mpz_get_str(hash, 16, output);
+        size_t hash_length = strlen(hash);
+        size_t padding = 64 - hash_length;
+        if (padding > 0) {
+            memmove(hash+padding, hash, hash_length);
+            for (size_t i =0; i < padding; i++) {
+            hash[i] = '0';
+            }
+        }
         return hash;
     }
 

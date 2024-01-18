@@ -11,7 +11,7 @@ namespace cbdc {
     class merkle_tree {
       public:
         /// Constructor.
-        merkle_tree(std::shared_ptr<logging::log> log, std::string leaves, uint64_t num_leaves);
+        merkle_tree(std::shared_ptr<logging::log> log, std::string subtrees, uint64_t num_leaves);
         
         /// Insert a new leaf into the Merkle Tree
         /// \param leaf new leaf to insert
@@ -19,12 +19,13 @@ namespace cbdc {
         auto insert(std::string leaf) -> std::string;
         
         static const size_t TREE_DEPTH = 20;
-        static const size_t LEAF_LENGTH = 32;
+        static const size_t NODE_LENGTH = 32;
 
       private:
         std::shared_ptr<logging::log> m_log;
         mimc _hasher;
-        std::vector<std::string> m_leaves;
+        std::vector<std::string> m_subtrees;
+        uint64_t m_num_leaves;
 
         auto zeros(int i) -> std::string;
 

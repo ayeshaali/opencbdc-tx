@@ -3,42 +3,47 @@
 
 namespace cbdc {
     merkle_tree::merkle_tree(std::shared_ptr<logging::log> log,
-                             std::string leaves, 
+                             std::string subtrees, 
                              uint64_t num_leaves)
                              : m_log(std::move(log)),
-                             _hasher(m_log) {
-        m_log->trace("num_leaves:", num_leaves);
-        for (size_t i = 0; i < num_leaves; i++) {
-            m_leaves.push_back(leaves.substr(i*LEAF_LENGTH*2, LEAF_LENGTH*2));
+                             _hasher(m_log),
+                             m_num_leaves(std::move(num_leaves)) {
+        m_log->trace("num_leaves:", m_num_leaves);
+        for (size_t i = 0; i < TREE_DEPTH; i++) {
+            m_subtrees.push_back(subtrees.substr(i*NODE_LENGTH*2, NODE_LENGTH*2));
         }
-        m_log->trace("leaves:", leaves);
+        // m_log->trace("leaves:", subtrees);
     }
     
     auto merkle_tree::insert(std::string leaf) -> std::string {
-        std::vector<std::string> leaves_copy(m_leaves); 
-        leaves_copy.push_back(leaf);
-
+        std::vector<std::string> subtree_copy(m_subtrees); 
         m_log->trace("leaf:", leaf);
 
-        // Changed from using subtrees:
-        // Starting with the leaves, hash up every pair of nodes into the next level of the MT
-        // Use the zeros hashes for single nodes (that do not have pairs)
+        uint64_t currentIndex = m_num_leaves;
+        std::string currentLevelHash = leaf;
+        std::string left;
+        std::string right; 
+
         for (size_t i = 0; i < TREE_DEPTH; i++) {
-            size_t level_length = leaves_copy.size();
-            std::vector<std::string> next_level;
-            for (size_t j = 0; j < leaves_copy.size(); j+=2) {
-                std::string hash;
-                if (j+1 < level_length) {
-                    hash = _hasher.hash(leaves_copy[j], leaves_copy[j+1]);
-                } else {
-                    hash = _hasher.hash(leaves_copy[j], zeros(i+1));
-                }
-                next_level.push_back(hash);
+            if (currentIndex % 2 == 0) {
+                left = currentLevelHash;
+                right = zeros(i+1);
+                subtree_copy[i] = currentLevelHash;
+            } else {
+                left = subtree_copy[i];
+                right = currentLevelHash;
             }
-            leaves_copy = next_level;
+            currentLevelHash = _hasher.hash(left, right); 
+            currentIndex /= 2;
         }
 
-        return leaves_copy[0];
+        std::string output;
+        output.reserve(NODE_LENGTH*(TREE_DEPTH+1));
+        output.append(currentLevelHash);
+        for (size_t i = 0; i < TREE_DEPTH; i++) {
+            output.append(subtree_copy[i]);
+        }
+        return output;
     }
 
     auto merkle_tree::zeros(int i) -> std::string {
