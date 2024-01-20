@@ -82,21 +82,47 @@ function gen_bytecode()
     end
 
     tc_withdraw_contract = function(param)
-        proof, root, nullifierHash, recipient, fee, refund = string.unpack("c512 c64 c64 c40 c40 I8 I8", param)
+        from, proof, root, nullifierHash, recipient, relayer, fee, refund = string.unpack("c32 c512 c64 c64 c40 c40 c64 c64", param)
+        print("withdrawing")
         root_data = coroutine.yield("root_" .. root)
         if not (string.len(root_data) > 0) then
+            print("root does not exist")
             error("root does not exist")
         end
 
-        nullifierHash_data = coroutine.yield("nullifier_" .. nullifierHash)
+        nullifierHash_update = "nullifier_" .. nullifierHash
+        nullifierHash_data = coroutine.yield(nullifierHash_update)
         if string.len(nullifierHash_data) > 0 then
+            print("nullifier hash was seen before")
             error("nullifier hash was seen before")
         end
 
-        verifyProof(proof, root, nullifierHash, recipient, fee, refund)
-        
+        print("verifying")
+        verify_proof(proof, root, nullifierHash, recipient, relayer, fee, refund)
+        print("proof verified")
+
+        function update_balances(updates, from)
+            deposit_amt = 1
+          
+            pool_data = coroutine.yield("TC_pool")
+            pool_amount = 0 
+            if string.len(pool_data) > 0 then
+                pool_amount = string.unpack("I8", pool_data) 
+            end
+            pool_amount=pool_amount-deposit_amt
+            updates["TC_pool"] = string.pack("I8",  pool_amount)
+            
+            account_data = coroutine.yield("account_" .. from)
+            account_balance = string.unpack("I8", account_data)
+            account_balance = account_balance + deposit_amt
+            updates["account_" .. from] = string.pack("I8", account_balance)
+            return updates
+        end 
+
         updates = {}
-        updates["nullifier_" .. nullifierHash] = nullifierHash
+        updates[nullifierHash_update] = nullifierHash
+        updates = update_balances(updates, from)
+        print("finished")
         return updates
     end
 
