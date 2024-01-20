@@ -82,6 +82,7 @@ namespace cbdc::parsec {
         params.append(_relayer.c_str(), _relayer.size());
         params.append(_fee.c_str(), _fee.size());
         params.append(_refund.c_str(), _refund.size());
+        m_log->trace("withdraw initiated");
         return execute_params(m_TC_withdraw_contract_key, params, false, result_callback);
     }
 
@@ -97,11 +98,6 @@ namespace cbdc::parsec {
             [&, result_callback](agent::interface::exec_return_type res) {
                 auto success = std::holds_alternative<agent::return_type>(res);
                 m_log->trace("first callback");
-                // if(success) {
-                //     auto updates = std::get<agent::return_type>(res);
-                //     for (auto it : updates) 
-                //         m_log->trace(it.first.c_str());
-                // }
                 result_callback(success);
             });
         return send_success;
