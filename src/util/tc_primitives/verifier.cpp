@@ -20,9 +20,18 @@ namespace cbdc {
                                std::string _root, 
                                std::string _nullifierHash, 
                                std::string _recipient, 
-                               std::string _relayer = "0", 
-                               int _fee = 0,
-                               int _refund = 0) -> bool {
+                               std::string _relayer) -> bool {
+
+        return verifyProof(proof, _root, _nullifierHash, _recipient, _relayer, 0, 0);
+    }
+
+    auto verifier::verifyProof(std::string proof, 
+                               std::string _root, 
+                               std::string _nullifierHash, 
+                               std::string _recipient, 
+                               std::string _relayer, 
+                               int _fee,
+                               int _refund) -> bool {
 
         for (size_t i = 0; i < 8; i++) {
             mpz_t _mpz_p;

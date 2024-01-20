@@ -316,7 +316,7 @@ namespace cbdc::parsec::agent::runner {
         auto log
         = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
         cbdc::verifier v =  cbdc::verifier(log);
-        bool result = v.verifyProof(args[0], args[1], args[2], args[3], args[4], stoi(args[5]), stoi(args[6]));
+        bool result = v.verifyProof(args[0], args[1], args[2], args[3], args[4]);
         if(result == 0) {
             lua_pushliteral(L, "invalid proof");
             lua_error(L);

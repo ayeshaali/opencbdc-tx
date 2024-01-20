@@ -46,7 +46,12 @@ namespace cbdc {
                              std::string _relayer, 
                              int _fee,
                              int _refund) -> bool;
-                             
+
+            auto verifyProof(std::string proof, 
+                               std::string _root, 
+                               std::string _nullifierHash, 
+                               std::string _recipient, 
+                               std::string _relayer) -> bool;              
         
         private:
             std::shared_ptr<logging::log> m_log;
