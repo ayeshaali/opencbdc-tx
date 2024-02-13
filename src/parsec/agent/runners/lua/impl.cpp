@@ -63,6 +63,7 @@ namespace cbdc::parsec::agent::runner {
         lua_register(m_state.get(), "check_sig", &lua_runner::check_sig);
         lua_register(m_state.get(), "verify_proof", &lua_runner::verify_proof);
         lua_register(m_state.get(), "insert_MT", &lua_runner::insert_MT);
+        lua_register(m_state.get(), "ToT_MT", &lua_runner::ToT_MT);
 
         static constexpr auto function_name = "contract";
 
@@ -275,27 +276,28 @@ namespace cbdc::parsec::agent::runner {
 
     auto lua_runner::insert_MT(lua_State* L) -> int {
         int n = lua_gettop(L);
-        if(n != 3) {
+        if(n != 4) {
             lua_pushliteral(L, "not enough arguments for inserting into MT");
             lua_error(L);
         }
         const auto num_leaves = lua_tonumber(L, 1);
+        const auto tree_depth = lua_tonumber(L, 4);
 
         size_t sz{};
         const auto* str = lua_tolstring(L, 2, &sz);
         assert(str != nullptr);
-        std::string leaves = std::string(str);
+        std::string subtrees = std::string(str);
 
         auto log
         = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
-        cbdc::merkle_tree MT = cbdc::merkle_tree(log, leaves, num_leaves);
+        cbdc::merkle_tree MT = cbdc::merkle_tree(log, subtrees, num_leaves, tree_depth);
 
         str = lua_tolstring(L, 3, &sz);
         assert(str != nullptr);
         std::string new_leaf = std::string(str);
-        std::string root = MT.insert(new_leaf);
+        std::string new_subtrees = MT.insert(new_leaf);
 
-        lua_pushstring(L, root.c_str());
+        lua_pushstring(L, new_subtrees.c_str());
         return 1;
     }
 
@@ -323,5 +325,33 @@ namespace cbdc::parsec::agent::runner {
         }
 
         return 0;
+    }
+
+    auto lua_runner::ToT_MT(lua_State* L) -> int {
+        int n = lua_gettop(L);
+        if(n != 3) {
+            lua_pushliteral(L, "not enough arguments for inserting into MT");
+            lua_error(L);
+        }
+
+        size_t sz{};
+        const auto* str = lua_tolstring(L, 1, &sz);
+        assert(str != nullptr);
+        std::string subtrees = std::string(str);
+
+        auto log
+        = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
+        cbdc::merkle_tree MT = cbdc::merkle_tree(log, subtrees, 0);
+
+        str = lua_tolstring(L, 2, &sz);
+        assert(str != nullptr);
+        std::string roots = std::string(str);
+
+        const auto num_roots = lua_tonumber(L, 3);
+
+        std::string root = MT.root_from_leaves(roots, num_roots);
+
+        lua_pushstring(L, root.c_str());
+        return 1;
     }
 }

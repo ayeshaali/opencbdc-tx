@@ -60,7 +60,17 @@ namespace cbdc::parsec {
         auto params = cbdc::buffer();
         params.append(m_pubkey.data(), m_pubkey.size());
         params.append(note.c_str(), note.size());
-        m_log->trace("deposit note", note);
+        return execute_params(m_TC_deposit_contract_key, params, false, result_callback);
+    }
+
+    auto account_wallet::deposit_ToT(std::string MT_index, std::string note,
+                             const std::function<void(bool)>& result_callback)
+        -> bool {
+        uint64_t index = stoi(MT_index);
+        auto params = cbdc::buffer();
+        params.append(m_pubkey.data(), m_pubkey.size());
+        params.append(&index, sizeof(index));
+        params.append(note.c_str(), note.size());
         return execute_params(m_TC_deposit_contract_key, params, false, result_callback);
     }
 

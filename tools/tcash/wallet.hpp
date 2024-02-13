@@ -46,10 +46,20 @@ namespace cbdc::parsec {
         /// Deposit the given amount from the account managed by this wallet to the
         /// TC contract. Blocks until the contract execution has completed.
         /// Updates the internal account balance with the most recent balance.
-        /// \param note amount of coins to deposit.
+        /// \param note deposit note
         /// \param result_callback function to call with pay result.
         /// \return true if the transaction was successful.
         auto deposit(std::string note,
+                 const std::function<void(bool)>& result_callback) -> bool;
+        
+        /// Deposit the given amount from the account managed by this wallet to the
+        /// ToT contract. Blocks until the contract execution has completed.
+        /// Updates the internal account balance with the most recent balance.
+        /// \param MT_index deposit note 
+        /// \param note index of MT to deposit to
+        /// \param result_callback function to call with pay result.
+        /// \return true if the transaction was successful.
+        auto deposit_ToT(std::string MT_index, std::string note,
                  const std::function<void(bool)>& result_callback) -> bool;
         
         /// Withdraw the given bank note from the TC contract to this wallet to the

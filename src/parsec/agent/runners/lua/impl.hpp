@@ -55,6 +55,7 @@ namespace cbdc::parsec::agent::runner {
         static auto check_sig(lua_State* L) -> int;
         static auto verify_proof(lua_State* L) -> int;
         static auto insert_MT(lua_State* L) -> int;
+        static auto ToT_MT(lua_State* L) -> int;
     };
 }
 
