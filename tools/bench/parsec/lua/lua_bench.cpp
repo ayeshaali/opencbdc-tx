@@ -179,7 +179,7 @@ auto main(int argc, char** argv) -> int {
 
     std::mutex samples_mut;
     auto samples_file = std::ofstream(
-        "tx_samples_" + std::to_string(cfg->m_component_id) + ".txt");
+        "tools/tcash/tx_samples_lua_bench_" + std::to_string(cfg->m_component_id) + ".txt");
     if(!samples_file.good()) {
         log->error("Unable to open samples file");
         return 1;
@@ -203,6 +203,9 @@ auto main(int argc, char** argv) -> int {
 
     auto thread_count = std::thread::hardware_concurrency();
     auto threads = std::vector<std::thread>();
+
+    auto count = std::atomic<size_t>();
+    size_t NUM_TRANSACTIONS = 1000;
     for(size_t i = 0; i < thread_count; i++) {
         auto t = std::thread([&]() {
             size_t from{};
@@ -239,6 +242,7 @@ auto main(int argc, char** argv) -> int {
                             pay_queue.push(from);
                         }
                         in_flight--;
+                        count++;
                     });
                 if(!res) {
                     log->fatal("Pay request failed");
@@ -265,7 +269,7 @@ auto main(int argc, char** argv) -> int {
                 log->fatal("Pay request timed out");
             }
         }
-        if(now - start_time > test_duration) {
+        if(now - start_time > test_duration || count + in_flight >= NUM_TRANSACTIONS - 100) {
             running = false;
         }
         std::this_thread::sleep_for(wait_time);

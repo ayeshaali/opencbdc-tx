@@ -182,7 +182,7 @@ auto main(int argc, char** argv) -> int {
     }
     
     constexpr uint64_t timeout = 300;
-    constexpr auto wait_time = std::chrono::seconds(1);
+    constexpr auto wait_time = std::chrono::milliseconds(2000);
     for(size_t count = 0;
         init_count < n_wallets && !init_error && count < timeout;
         count++) {
@@ -199,9 +199,151 @@ auto main(int argc, char** argv) -> int {
     std::fstream myfile;
     myfile.open("sample_sequence.txt", std::ios::in);
 
+    std::mutex samples_mut;
+    auto samples_file = std::ofstream(
+        "tools/tcash/tx_samples_tcash_" + std::to_string(cfg->m_component_id) + ".txt");
+    if(!samples_file.good()) {
+        log->error("Unable to open samples file");
+        return 1;
+    }
+
+    auto total_transaction_queue = std::queue<std::vector<std::string>>();
+    auto curr_transaction_queue = cbdc::blocking_queue<std::vector<std::string>>();;
+    if (myfile.is_open()) {
+        std::string action;
+        while (getline(myfile, action)) {
+            std::vector<std::string> act = split(action, ",");
+            total_transaction_queue.push(act);
+        }
+        log->trace("finished reading file");
+        myfile.close();
+    }
+
+    for (size_t i =0; i<5; i++) {
+        std::vector<std::string> act = std::move(total_transaction_queue.front());
+        curr_transaction_queue.push(act);
+        total_transaction_queue.pop();
+    }
+
+    auto deposit_flight = std::atomic<size_t>();
+    auto withdraw_flight = std::atomic<size_t>();
+
+    auto thread_count = std::thread::hardware_concurrency();
+    auto threads = std::vector<std::thread>();
+    for(size_t i = 0; i < thread_count; i++) {
+        auto t = std::thread([&]() {
+            std::vector<std::string> act;
+            while(curr_transaction_queue.pop(act)) {
+                std::string op = act[0];
+                if (!op.compare("0")) {
+                    int wallet_index = stoi(act[1]);
+                    int deposit_number = stoi(act[2]);
+                    log->trace("start deposit", deposit_number, "for wallet", wallet_index);
+                    deposit_flight++;
+                    auto tx_start = std::chrono::high_resolution_clock::now();
+                    auto res = wallets[wallet_index].deposit(
+                        act[3],
+                        [&, wallet_index, deposit_number, tx_start](bool ret) {
+                            auto tx_end
+                            = std::chrono::high_resolution_clock::now();
+                            const auto tx_delay = tx_end - tx_start;
+                            auto out_buf = std::stringstream();
+                            out_buf << tx_end.time_since_epoch().count() << " "
+                                    << tx_delay.count() << "\n";
+                            auto out_str = out_buf.str();
+                            {
+                                std::unique_lock l(samples_mut);
+                                samples_file << out_str;
+                            }
+                            if(!ret) {
+                                log->fatal("Deposit request error");
+                            }
+                            log->trace("finished deposit", deposit_number, "for wallet", wallet_index);
+                            deposit_flight--;
+                            if (!total_transaction_queue.empty()) {
+                                std::vector<std::string> new_deposit = std::move(total_transaction_queue.front());
+                                curr_transaction_queue.push(new_deposit);
+                                total_transaction_queue.pop();
+                            }
+                        }
+                    );
+                    if(!res) {
+                        log->fatal("Deposit request failed");
+                    }
+                } else {
+                    int wallet_index = stoi(act[1]);
+                    int withdraw_number = stoi(act[2]);
+                    withdraw_flight++;
+                    log->trace("start withdraw", withdraw_number, "for wallet", wallet_index);
+                    auto tx_start = std::chrono::high_resolution_clock::now();
+                    auto res = wallets[wallet_index].withdraw(
+                        act[4],
+                        act[5],
+                        act[6],
+                        act[7],
+                        act[8],
+                        act[9],
+                        act[10],
+                        [&, wallet_index, withdraw_number, tx_start](bool ret) {
+                            auto tx_end
+                            = std::chrono::high_resolution_clock::now();
+                            const auto tx_delay = tx_end - tx_start;
+                            auto out_buf = std::stringstream();
+                            out_buf << tx_end.time_since_epoch().count() << " "
+                                    << tx_delay.count() << "\n";
+                            auto out_str = out_buf.str();
+                            {
+                                std::unique_lock l(samples_mut);
+                                samples_file << out_str;
+                            }
+                            if(!ret) {
+                                log->fatal("Withdraw request error");
+                            }
+                            log->trace("finished withdraw", withdraw_number, "for wallet", wallet_index);
+                            withdraw_flight--;
+                            if (!total_transaction_queue.empty()) {
+                                std::vector<std::string> new_deposit = std::move(total_transaction_queue.front());
+                                curr_transaction_queue.push(new_deposit);
+                                total_transaction_queue.pop();
+                            }
+                        }
+                    );
+                    if(!res) {
+                        log->fatal("Withdraw request failed");
+                    } 
+                }
+            }
+        });
+        threads.emplace_back(std::move(t));
+    }
+    
+    std::this_thread::sleep_for(wait_time);
+    while(withdraw_flight > 0 || deposit_flight > 0) {
+        log->trace("deposits in flights (run loop):", deposit_flight);
+        log->trace("withdraws in flights (run loop):", withdraw_flight);
+        std::this_thread::sleep_for(wait_time);
+    }
+
+    log->trace("Joining thread");
+    curr_transaction_queue.clear();
+    for(auto& t : threads) {
+        t.join();
+    }
+
+    log->trace("finished");
+    return 0;
+}
+
+auto sequential_check(std::shared_ptr<cbdc::logging::log> log, 
+                      std::vector<cbdc::parsec::account_wallet> wallets) -> int {
+
+    std::fstream myfile;
+    myfile.open("sample_sequence.txt", std::ios::in);
+
     auto total_deposit_queue = std::queue<std::vector<std::string>>();
     auto total_withdraw_queue = cbdc::blocking_queue<std::vector<std::string>>();
     auto curr_deposit_queue = cbdc::blocking_queue<std::vector<std::string>>();
+
     if (myfile.is_open()) {
         std::string action;
         while (getline(myfile, action)) {
@@ -223,22 +365,11 @@ auto main(int argc, char** argv) -> int {
         total_deposit_queue.pop();
     }
 
-    std::mutex samples_mut;
-    auto samples_file = std::ofstream(
-        "tx_samples_" + std::to_string(cfg->m_component_id) + ".txt");
-    if(!samples_file.good()) {
-        log->error("Unable to open samples file");
-        return 1;
-    }
-
     auto deposit_flight = std::atomic<size_t>();
     auto withdraw_flight = std::atomic<size_t>();
     auto count = std::atomic<size_t>();
-
-    // auto thread_count = std::thread::hardware_concurrency();
     auto threads = std::vector<std::thread>();
 
-    // deposit threads: thread_count/2 + 
     for(size_t i = 0; i < 1; i++) {
         auto t = std::thread([&]() {
             std::vector<std::string> act;
@@ -248,21 +379,9 @@ auto main(int argc, char** argv) -> int {
                 int deposit_number = stoi(act[2]);
                 log->trace("start deposit", deposit_number, "for wallet", wallet_index);
                 deposit_flight++;
-                auto tx_start = std::chrono::high_resolution_clock::now();
                 auto res = wallets[wallet_index].deposit(
                     act[3],
-                    [&, wallet_index, deposit_number, tx_start](bool ret) {
-                        auto tx_end
-                            = std::chrono::high_resolution_clock::now();
-                        // const auto tx_delay = tx_end - tx_start;
-                        std::chrono::duration<double> tx_delay = std::chrono::duration_cast<std::chrono::duration<double>>(tx_end - tx_start);
-                        auto out_buf = std::stringstream();
-                        out_buf << deposit_number << " " << tx_delay.count() << "\n";
-                        auto out_str = out_buf.str();
-                        {
-                            std::unique_lock l(samples_mut);
-                            samples_file << out_str;
-                        }
+                    [&, wallet_index, deposit_number](bool ret) {
                         if(!ret) {
                             log->fatal("Deposit request error");
                         }
@@ -285,7 +404,6 @@ auto main(int argc, char** argv) -> int {
         threads.emplace_back(std::move(t));
     }
 
-    // withdraw threads: thread_count/2 +
     for(size_t i = 0; i < 1; i++) {
         auto t = std::thread([&]() {
             std::vector<std::string> act;
@@ -302,7 +420,6 @@ auto main(int argc, char** argv) -> int {
                 log->trace("deposit after which to withdraw", curr_deposit);
                 log->trace("start withdraw", withdraw_number, "for wallet", wallet_index);
                 log->trace("withdraws in flights:", withdraw_flight);
-                auto tx_start = std::chrono::high_resolution_clock::now();
                 auto res = wallets[wallet_index].withdraw(
                     act[4],
                     act[5],
@@ -311,18 +428,7 @@ auto main(int argc, char** argv) -> int {
                     act[8],
                     act[9],
                     act[10],
-                    [&, wallet_index, withdraw_number, tx_start](bool ret) {
-                        auto tx_end
-                            = std::chrono::high_resolution_clock::now();
-                        // const auto tx_delay = tx_end - tx_start;
-                        std::chrono::duration<double> tx_delay = std::chrono::duration_cast<std::chrono::duration<double>>(tx_end - tx_start);
-                        auto out_buf = std::stringstream();
-                        out_buf << "withdraw " << withdraw_number << " " << tx_delay.count() << "\n";
-                        auto out_str = out_buf.str();
-                        {
-                            std::unique_lock l(samples_mut);
-                            samples_file << out_str;
-                        }
+                    [&, wallet_index, withdraw_number](bool ret) {
                         if(!ret) {
                             log->fatal("Withdraw request error");
                         }
@@ -337,7 +443,9 @@ auto main(int argc, char** argv) -> int {
         });
         threads.emplace_back(std::move(t));
     }
-    
+
+    constexpr auto wait_time = std::chrono::milliseconds(2000);
+    std::this_thread::sleep_for(wait_time);
     while(withdraw_flight > 0 || deposit_flight > 0) {
         log->trace("deposits in flights (run loop):", deposit_flight);
         log->trace("withdraws in flights (run loop):", withdraw_flight);

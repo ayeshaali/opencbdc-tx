@@ -82,6 +82,11 @@ def read_in_data(fname):
     fin.close()
     return data
 
+def separate_graphs(f_list):
+    for fin in f_list:
+        fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+        plot_latency(fin, fig, axs[0], axs[1])
+        fig.savefig(path + "/aggregate_performance_" + fin[13:] + ".png")
 
 if __name__ == '__main__':
     path = "."
@@ -89,8 +94,9 @@ if __name__ == '__main__':
     if (len(sys.argv) > 1):
         path = str(sys.argv[1])
     f_list = glob.glob(path + '/tx_samples_*.txt')
-    global_fig, global_axs = plt.subplots(1, 2, figsize=(12, 5))
-    for fin in f_list:
-        plot_latency(fin)
-        plot_latency(fin, global_fig, global_axs[0], global_axs[1])
-    global_fig.savefig(path + "/aggregate_performance.png")
+    separate_graphs(f_list)
+    # global_fig, global_axs = plt.subplots(1, 2, figsize=(12, 5))
+    # for fin in f_list:
+    #     plot_latency(fin)
+    #     plot_latency(fin, global_fig, global_axs[0], global_axs[1])
+    # global_fig.savefig(path + "/aggregate_performance.png")
