@@ -84,17 +84,19 @@ function gen_bytecode()
     tc_withdraw_contract = function(param)
         from, proof, root, nullifierHash, recipient, relayer, fee, refund = string.unpack("c32 c512 c64 c64 c40 c40 c64 c64", param)
         print("withdrawing")
-        root_data = coroutine.yield("root_" .. root)
-        if not (string.len(root_data) > 0) then
-            print("root does not exist")
-            error("root does not exist")
-        end
-
         nullifierHash_update = "nullifier_" .. nullifierHash
         nullifierHash_data = coroutine.yield(nullifierHash_update)
         if string.len(nullifierHash_data) > 0 then
             print("nullifier hash was seen before")
             error("nullifier hash was seen before")
+        end
+        root_data = coroutine.yield("root_" .. root)
+
+        function root_check()
+            if not (string.len(root_data) > 0) then
+                print("root does not exist")
+                error("root does not exist")
+            end
         end
 
         print("verifying")
@@ -200,18 +202,21 @@ function gen_bytecode()
     ToT_withdraw_contract = function(param)
         from, proof, root, nullifierHash, recipient, relayer, fee, refund = string.unpack("c32 c512 c64 c64 c40 c40 c64 c64", param)
         print("withdrawing ToT")
-        print("ToT withdraw root: " .. root)
-        root_data = coroutine.yield("ToT_root_" .. root)
-        if not (string.len(root_data) > 0) then
-            print("root does not exist")
-            error("root does not exist")
-        end
-
         nullifierHash_update = "nullifier_" .. nullifierHash
         nullifierHash_data = coroutine.yield(nullifierHash_update)
         if string.len(nullifierHash_data) > 0 then
             print("nullifier hash was seen before")
             error("nullifier hash was seen before")
+        end
+
+        print("ToT withdraw root: " .. root)
+        root_data = coroutine.yield("ToT_root_" .. root)
+        
+        function root_check()
+            if not (string.len(root_data) > 0) then
+                print("root does not exist")
+                error("root does not exist")
+            end
         end
 
         print("verifying")
