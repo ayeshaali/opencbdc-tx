@@ -86,7 +86,7 @@ def separate_graphs(f_list):
     for fin in f_list:
         fig, axs = plt.subplots(1, 2, figsize=(12, 5))
         plot_latency(fin, fig, axs[0], axs[1])
-        fig.savefig(path + "/aggregate_performance_" + fin[13:] + ".png")
+        fig.savefig(path + "/aggregate_performance_" + fin.split("/")[-1] + ".png")
 
 if __name__ == '__main__':
     path = "."

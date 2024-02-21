@@ -197,11 +197,11 @@ auto main(int argc, char** argv) -> int {
     log->trace("Added new accounts");
     
     std::fstream myfile;
-    myfile.open("sample_sequence.txt", std::ios::in);
+    myfile.open("tools/tcash/tcash_sequences/sample_sequence_v1.txt", std::ios::in);
 
     std::mutex samples_mut;
     auto samples_file = std::ofstream(
-        "tools/tcash/tx_samples_tcash_" + std::to_string(cfg->m_component_id) + ".txt");
+        "tools/tcash/tcash_sequences/tx_samples_tcash_v1_" + std::to_string(cfg->m_component_id) + ".txt");
     if(!samples_file.good()) {
         log->error("Unable to open samples file");
         return 1;

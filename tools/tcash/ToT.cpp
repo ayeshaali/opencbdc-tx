@@ -222,14 +222,14 @@ auto main(int argc, char** argv) -> int {
     
     std::mutex samples_mut;
     auto samples_file = std::ofstream(
-        "tools/tcash/tx_samples_ToT_" + std::to_string(cfg->m_component_id) + ".txt");
+        "tools/tcash/tcash_sequences/tx_samples_ToT_v1_" + std::to_string(cfg->m_component_id) + ".txt");
     if(!samples_file.good()) {
         log->error("Unable to open samples file");
         return 1;
     }
 
     std::fstream myfile;
-    myfile.open("sample_ToT_sequence.txt", std::ios::in);
+    myfile.open("tools/tcash/tcash_sequences/sample_ToT_sequence_v1.txt", std::ios::in);
 
    auto total_transaction_queue = std::queue<std::vector<std::string>>();
     auto curr_transaction_queue = cbdc::blocking_queue<std::vector<std::string>>();;
