@@ -222,14 +222,14 @@ auto main(int argc, char** argv) -> int {
     
     std::mutex samples_mut;
     auto samples_file = std::ofstream(
-        "tools/tcash/tcash_sequences/tx_samples_ToT_v1_" + std::to_string(cfg->m_component_id) + ".txt");
+        "tools/tcash/tcash_sequences/tx_samples_ToT_16_10k_" + std::to_string(cfg->m_component_id) + ".txt");
     if(!samples_file.good()) {
         log->error("Unable to open samples file");
         return 1;
     }
 
     std::fstream myfile;
-    myfile.open("tools/tcash/tcash_sequences/sample_ToT_sequence_v1.txt", std::ios::in);
+    myfile.open("tools/tcash/tcash_sequences/ToT_16_10k.txt", std::ios::in);
 
    auto total_transaction_queue = std::queue<std::vector<std::string>>();
     auto curr_transaction_queue = cbdc::blocking_queue<std::vector<std::string>>();;
@@ -302,12 +302,24 @@ auto main(int argc, char** argv) -> int {
                     params.append(&num_trees, sizeof(num_trees));
                     log->trace("start update");
                     update_flight++;
+                    auto tx_start = std::chrono::high_resolution_clock::now();
                     auto res = agents[0]->exec(
                         ToT_update_contract_key,
                         params,
                         false,
                         [&](cbdc::parsec::agent::interface::exec_return_type ret) {
                             auto success = std::holds_alternative<cbdc::parsec::agent::return_type>(ret);
+                            auto tx_end
+                            = std::chrono::high_resolution_clock::now();
+                            const auto tx_delay = tx_end - tx_start;
+                            auto out_buf = std::stringstream();
+                            out_buf << tx_end.time_since_epoch().count() << " "
+                                    << tx_delay.count() << "\n";
+                            auto out_str = out_buf.str();
+                            {
+                                std::unique_lock l(samples_mut);
+                                samples_file << out_str;
+                            }
                             if(!success) {
                                 log->fatal("Update request error");
                             }
