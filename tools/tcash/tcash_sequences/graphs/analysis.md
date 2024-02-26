@@ -15,14 +15,28 @@
 
 # Tree of Trees
 
-* 5000 transactions, 16 trees
-![tot_16_10000](ToT_16_5k.png)
-![tot_16_10000](ToT_16_5k_ordered.png)
+10000 transactions
 
-* 10000 transactions, 16 trees
-![tot_16_10000](ToT_16_10k.png)
-![tot_16_10000](ToT_16_10k_ordered.png)
+* 2 trees
+![tot_2_10k](ToT_2_10k_0.png)
+![tot_2_10k](ToT_2_10k_ordered_0.png)
 
-* 5000 transactions, 2 trees
-![tot_2_5000](ToT_2_5k.png)
-![tot_2_5000](ToT_2_5k_ordered.png)
+* 4 trees
+![tot_2_10k](ToT_4_10k_0.png)
+![tot_2_10k](ToT_4_10k_ordered_0.png)
+
+* 8 trees
+![tot_2_10k](ToT_8_10k_0.png)
+![tot_2_10k](ToT_8_10k_ordered_0.png)
+
+* 16 trees
+![tot_2_10k](ToT_16_10k_0.png)
+![tot_2_10k](ToT_16_10k_ordered_0.png)
+
+* 32 trees
+![tot_2_10k](ToT_32_10k_0.png)
+![tot_2_10k](ToT_32_10k_ordered_0.png)
+
+* 64 trees
+![tot_2_10k](ToT_64_10k_0.png)
+![tot_2_10k](ToT_64_10k_ordered_0.png)
