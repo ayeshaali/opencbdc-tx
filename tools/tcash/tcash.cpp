@@ -95,7 +95,7 @@ auto main(int argc, char** argv) -> int {
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
     luaL_dofile(L, contract_file.c_str());
-    lua_getglobal(L, "gen_bytecode");
+    lua_getglobal(L, "merkletree");
     if(lua_pcall(L, 0, 4, 0) != 0) {
         log->error("Contract bytecode generation failed, with error:",
                    lua_tostring(L, -1));

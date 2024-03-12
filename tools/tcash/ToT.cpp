@@ -95,7 +95,7 @@ auto main(int argc, char** argv) -> int {
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
     luaL_dofile(L, contract_file.c_str());
-    lua_getglobal(L, "gen_bytecode");
+    lua_getglobal(L, "merkletree");
     if(lua_pcall(L, 0, 5, 0) != 0) {
         log->error("Contract bytecode generation failed, with error:",
                    lua_tostring(L, -1));
@@ -220,16 +220,18 @@ auto main(int argc, char** argv) -> int {
 
     log->trace("Added new accounts");
     
+    uint64_t num_trees = 8;
+    std::string filename = "ToT_8_10k";
     std::mutex samples_mut;
     auto samples_file = std::ofstream(
-        "tools/tcash/tcash_sequences/tx_samples_ToT_16_10k_" + std::to_string(cfg->m_component_id) + ".txt");
+        "tools/tcash/tcash_sequences/tx_samples_" + filename + "_" + std::to_string(cfg->m_component_id) + ".txt");
     if(!samples_file.good()) {
         log->error("Unable to open samples file");
         return 1;
     }
 
     std::fstream myfile;
-    myfile.open("tools/tcash/tcash_sequences/ToT_16_10k.txt", std::ios::in);
+    myfile.open("tools/tcash/tcash_sequences/" + filename + ".txt", std::ios::in);
 
    auto total_transaction_queue = std::queue<std::vector<std::string>>();
     auto curr_transaction_queue = cbdc::blocking_queue<std::vector<std::string>>();;
@@ -256,7 +258,7 @@ auto main(int argc, char** argv) -> int {
     auto thread_count = std::thread::hardware_concurrency();
     auto threads = std::vector<std::thread>();
 
-    for (size_t i = 0; i < thread_count; i++) {
+    for (size_t i = 0; i < thread_count-3; i++) {
         auto t = std::thread([&]() {
             std::vector<std::string> act;
             while(curr_transaction_queue.pop(act)) {
@@ -298,7 +300,6 @@ auto main(int argc, char** argv) -> int {
                     }
                 } else if (!op.compare("2")) {
                     auto params = cbdc::buffer();
-                    uint64_t num_trees = 16;
                     params.append(&num_trees, sizeof(num_trees));
                     log->trace("start update");
                     update_flight++;

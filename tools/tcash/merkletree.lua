@@ -1,4 +1,4 @@
-function gen_bytecode()
+function merkletree()
     tc_deposit_contract = function(param)
         from, commitment = string.unpack("c32 c64", param)
 
@@ -23,13 +23,16 @@ function gen_bytecode()
 
             MT_updates = insert_MT(num_leaves, subtrees, commitment, 20)
             root = string.sub(MT_updates, 1, 64)
+            curr_root_update = "root"
             root_update = "root_" .. root
             leaf_update = "leaf_" .. commitment
             leaf_data = coroutine.yield(leaf_update)
             root_data = coroutine.yield(root_update)
+            leaf_data = coroutine.yield(curr_root_update)
             num_leaves = num_leaves + 1
             
             updates = {}
+            updates[curr_root_update] = string.pack("c64", root)
             updates[root_update] = string.pack("c64", root) 
             updates[leaf_update] = string.pack("c64", commitment) 
             updates["subtrees"] = string.pack("c1280", string.sub(MT_updates, 65, 1280))            
@@ -185,10 +188,10 @@ function gen_bytecode()
 
         verify_proof(proof, root, nullifierHash, recipient, relayer, fee, refund)
 
-        function update_balances(updates, from, nullifierHash)
+        function update_balances(updates, from, nullifierHash, numTrees)
             deposit_amt = 1
             pool_number = tonumber(string.sub(nullifierHash, -2), 16)
-            pool_index = pool_number % 16
+            pool_index = pool_number % numTrees
             pool_name = "ToT_pool_" .. pool_index
 
             pool_data = coroutine.yield(pool_name)
@@ -208,7 +211,7 @@ function gen_bytecode()
 
         updates = {}
         updates[nullifierHash_update] = nullifierHash
-        updates = update_balances(updates, from, nullifierHash)
+        updates = update_balances(updates, from, nullifierHash, 8)
         return updates
     end
 
