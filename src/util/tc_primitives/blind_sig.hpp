@@ -21,7 +21,7 @@ namespace cbdc {
 
         auto sign(std::string str_x, std::string str_y) -> std::string;
 
-        auto verify(std::string sn, std::string str_sig) -> bool;
+        auto verify(std::string sn, std::string sig_x, std::string sig_y) -> bool;
 
         auto blind(libff::alt_bn128_G1 hash, std::string secret) -> libff::alt_bn128_G1;
 

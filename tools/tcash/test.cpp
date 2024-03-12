@@ -82,13 +82,21 @@ auto main() -> int {
         std::string deposit;
         while (getline(myfile, deposit)) {
             std::vector<std::string> d = split(deposit, ",");
-            libff::alt_bn128_G1 hashed = bs.hash2curve(d[0]);
-            libff::alt_bn128_G1 blinded_cm = bs.blind(hashed,d[1]);
-            std::string bx = bs.bigIntq2str(blinded_cm.X.as_bigint());
-            std::string by = bs.bigIntq2str(blinded_cm.Y.as_bigint());
-            std::string sig = bs.sign(bx,by);
-            assert(d[2]==sig.substr(0,64));
-            assert(d[3]==sig.substr(64,128));
+            std::string op = d[0];
+            if (!op.compare("0")) {
+                log->trace("Deposit");
+                libff::alt_bn128_G1 hashed = bs.hash2curve(d[1]);
+                libff::alt_bn128_G1 blinded_cm = bs.blind(hashed,d[2]);
+                std::string bx = bs.bigIntq2str(blinded_cm.X.as_bigint());
+                std::string by = bs.bigIntq2str(blinded_cm.Y.as_bigint());
+                std::string sig = bs.sign(bx,by);
+                assert(d[3]==sig.substr(0,64));
+                assert(d[4]==sig.substr(64,128));
+            } else if (!op.compare("1")) {
+                bool result = bs.verify(d[1], d[2], d[3]);
+                log->trace("Withdraw");
+                assert(result);
+            }
         }
         myfile.close();
     }   

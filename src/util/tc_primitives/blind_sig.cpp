@@ -41,9 +41,9 @@ namespace cbdc {
         return sig;
     }
 
-    auto blind_sig::verify(std::string sn, std::string str_sig) -> bool {
-        libff::alt_bn128_Fq x = str2Fq(str_sig.substr(0,64), 16);
-        libff::alt_bn128_Fq y = str2Fq(str_sig.substr(64,128), 16);
+    auto blind_sig::verify(std::string sn, std::string sig_x, std::string sig_y) -> bool {
+        libff::alt_bn128_Fq x = str2Fq(sig_x, 16);
+        libff::alt_bn128_Fq y = str2Fq(sig_y, 16);
         libff::alt_bn128_G1 sig = libff::alt_bn128_G1(x, y, libff::alt_bn128_Fq::one());
 
         libff::alt_bn128_G1 hash = hash2curve(sn);
