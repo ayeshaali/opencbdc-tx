@@ -5,7 +5,8 @@
 
 #include "util/tc_primitives/merkletree.hpp"
 #include "util/tc_primitives/verifier.hpp"
-
+#include "util/tc_primitives/blind_sig.hpp"
+#include "crypto/sha256.h"
 #include <lua.hpp>
 #include <iostream>
 #include <fstream>
@@ -72,6 +73,25 @@ auto main() -> int {
         }
         myfile.close();
     }
+
+    // ECASH TEST
+    cbdc::blind_sig bs = cbdc::blind_sig(log);
+    myfile.open("sample_ecash_sequence.txt", std::ios::in);
+
+    if (myfile.is_open()) {
+        std::string deposit;
+        while (getline(myfile, deposit)) {
+            std::vector<std::string> d = split(deposit, ",");
+            libff::alt_bn128_G1 hashed = bs.hash2curve(d[0]);
+            libff::alt_bn128_G1 blinded_cm = bs.blind(hashed,d[1]);
+            std::string bx = bs.bigIntq2str(blinded_cm.X.as_bigint());
+            std::string by = bs.bigIntq2str(blinded_cm.Y.as_bigint());
+            std::string sig = bs.sign(bx,by);
+            assert(d[2]==sig.substr(0,64));
+            assert(d[3]==sig.substr(64,128));
+        }
+        myfile.close();
+    }   
 
     return 0;
 }
