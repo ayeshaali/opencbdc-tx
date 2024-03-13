@@ -28,7 +28,7 @@ function merkletree()
             leaf_update = "leaf_" .. commitment
             leaf_data = coroutine.yield(leaf_update)
             root_data = coroutine.yield(root_update)
-            leaf_data = coroutine.yield(curr_root_update)
+            curr_root_data = coroutine.yield(curr_root_update)
             num_leaves = num_leaves + 1
             
             updates = {}

@@ -96,15 +96,15 @@ auto main(int argc, char** argv) -> int {
     luaL_openlibs(L);
     luaL_dofile(L, contract_file.c_str());
     lua_getglobal(L, "merkletree");
-    if(lua_pcall(L, 0, 4, 0) != 0) {
+    if(lua_pcall(L, 0, 5, 0) != 0) {
         log->error("Contract bytecode generation failed, with error:",
                    lua_tostring(L, -1));
         return 1;
     }
     auto tc_deposit_contract = cbdc::buffer();
     auto tc_withdraw_contract = cbdc::buffer();
-    tc_deposit_contract = cbdc::buffer::from_hex(lua_tostring(L, -4)).value();
-    tc_withdraw_contract = cbdc::buffer::from_hex(lua_tostring(L, -3)).value();
+    tc_deposit_contract = cbdc::buffer::from_hex(lua_tostring(L, -5)).value();
+    tc_withdraw_contract = cbdc::buffer::from_hex(lua_tostring(L, -4)).value();
     auto tc_deposit_contract_key = cbdc::buffer();
     auto tc_withdraw_contract_key = cbdc::buffer();
     tc_deposit_contract_key.append("tc_deposit_contract", 19);
