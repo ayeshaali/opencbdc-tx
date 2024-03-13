@@ -62,6 +62,16 @@ namespace cbdc::parsec {
         auto deposit_ToT(std::string MT_index, std::string note,
                  const std::function<void(bool)>& result_callback) -> bool;
         
+        /// Deposit the given amount from the account managed by this wallet to the
+        /// eCash contract. Blocks until the contract execution has completed.
+        /// Updates the internal account balance with the most recent balance.
+        /// \param cm_x x coordinate of commitment (G1 point)
+        /// \param cm_y y coordinate of commitment (G1 point)
+        /// \param result_callback function to call with pay result.
+        /// \return true if the transaction was successful.
+        auto deposit_ecash(std::string cm_x, std::string cm_y,
+                  const std::function<void(bool)>& result_callback) -> bool;
+        
         /// Withdraw the given bank note from the TC contract to this wallet to the
         /// TC contract. Blocks until the contract execution has completed.
         /// Updates the internal account balance with the most recent balance.
@@ -75,6 +85,17 @@ namespace cbdc::parsec {
                       std::string _relayer, 
                       std::string _fee,
                       std::string _refund,
+                      const std::function<void(bool)>& result_callback) -> bool;
+
+        /// Withdraw the given bank note from the eCash contract to this wallet
+        /// Blocks until the contract execution has completed.
+        /// Updates the internal account balance with the most recent balance.
+        /// \param sn nullifier
+        /// \param sig_x x coordinate of signature to verify (G1 point)
+        /// \param sig_y y coordinate of signature to verify (G1 point)
+        /// \param result_callback function to call with pay result.
+        /// \return true if the transaction was successful.
+        auto withdraw_ecash(std::string sn, std::string sig_x, std::string sig_y,
                       const std::function<void(bool)>& result_callback) -> bool;
 
         /// Return the public key associated with this account.
@@ -94,8 +115,8 @@ namespace cbdc::parsec {
         std::shared_ptr<logging::log> m_log;
         std::shared_ptr<agent::rpc::client> m_agent;
         std::shared_ptr<broker::interface> m_broker;
-        cbdc::buffer m_TC_deposit_contract_key;
-        cbdc::buffer m_TC_withdraw_contract_key;
+        cbdc::buffer m_deposit_contract_key;
+        cbdc::buffer m_withdraw_contract_key;
         cbdc::buffer m_account_key;
 
         std::unique_ptr<secp256k1_context,

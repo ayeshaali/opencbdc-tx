@@ -10,6 +10,7 @@
 #include "util/common/variant_overloaded.hpp"
 #include "util/tc_primitives/merkletree.hpp"
 #include "util/tc_primitives/verifier.hpp"
+#include "util/tc_primitives/blind_sig.hpp"
 
 #include <cassert>
 #include <secp256k1.h>
@@ -64,6 +65,8 @@ namespace cbdc::parsec::agent::runner {
         lua_register(m_state.get(), "verify_proof", &lua_runner::verify_proof);
         lua_register(m_state.get(), "insert_MT", &lua_runner::insert_MT);
         lua_register(m_state.get(), "ToT_MT", &lua_runner::ToT_MT);
+        lua_register(m_state.get(), "ecash_sign", &lua_runner::ecash_sign);
+        lua_register(m_state.get(), "ecash_verify", &lua_runner::ecash_verify);
 
         static constexpr auto function_name = "contract";
 
@@ -355,4 +358,63 @@ namespace cbdc::parsec::agent::runner {
         lua_pushstring(L, root.c_str());
         return 1;
     }
+
+    auto lua_runner::ecash_sign(lua_State* L) -> int {
+        int n = lua_gettop(L);
+        if(n != 2) {
+            lua_pushliteral(L, "not enough arguments for signing commitment");
+            lua_error(L);
+        }
+
+        size_t sz{};
+        const auto* str = lua_tolstring(L, 1, &sz);
+        assert(str != nullptr);
+        std::string cm_x = std::string(str);
+
+        str = lua_tolstring(L, 2, &sz);
+        assert(str != nullptr);
+        std::string cm_y = std::string(str);
+
+         auto log
+        = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
+        cbdc::blind_sig bs = cbdc::blind_sig(log);
+
+        std::string sig = bs.sign(cm_x,cm_y);
+
+        lua_pushstring(L, sig.c_str());
+        return 1;
+    }
+
+    auto lua_runner::ecash_verify(lua_State* L) -> int {
+        int n = lua_gettop(L);
+        if(n != 3) {
+            lua_pushliteral(L, "not enough arguments for verifying signature");
+            lua_error(L);
+        }
+
+        size_t sz{};
+        const auto* str = lua_tolstring(L, 1, &sz);
+        assert(str != nullptr);
+        std::string sn = std::string(str);
+
+        str = lua_tolstring(L, 2, &sz);
+        assert(str != nullptr);
+        std::string sig_x = std::string(str);
+
+        str = lua_tolstring(L, 3, &sz);
+        assert(str != nullptr);
+        std::string sig_y = std::string(str);
+
+         auto log
+        = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
+        cbdc::blind_sig bs = cbdc::blind_sig(log);
+
+        bool result = bs.verify(sn, sig_x, sig_y);
+        if(result == 0) {
+            lua_pushliteral(L, "invalid proof");
+            lua_error(L);
+        }
+        return 0;
+    }
+
 }

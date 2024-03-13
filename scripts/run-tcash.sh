@@ -17,6 +17,11 @@ for arg in "$@"; do
             --shard_count=1 --shard0_count=1 --shard00_endpoint=localhost:5556 \
             --agent_count=1 --agent0_endpoint=localhost:8000 \
             --loglevel=TRACE tools/tcash/merkletree.lua 5 > logs/tcash.log & 
+        elif [[ "$arg" == "--run=ecash" ]]; then 
+            ./build/tools/tcash/ecash --component_id=0 --ticket_machine0_endpoint=localhost:7777 --ticket_machine_count=1 \
+            --shard_count=1 --shard0_count=1 --shard00_endpoint=localhost:5556 \
+            --agent_count=1 --agent0_endpoint=localhost:8000 \
+            --loglevel=TRACE tools/tcash/ecash.lua 5 > logs/tcash.log & 
         elif [[ "$arg" == "--run=lua_bench" ]]; then 
             ./build/tools/bench/parsec/lua/lua_bench --component_id=0 --ticket_machine0_endpoint=localhost:7777 --ticket_machine_count=1 \
             --shard_count=1 --shard0_count=1 --shard00_endpoint=localhost:5556 \

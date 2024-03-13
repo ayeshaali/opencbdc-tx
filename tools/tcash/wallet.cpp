@@ -22,8 +22,8 @@ namespace cbdc::parsec {
         : m_log(std::move(log)),
           m_agent(std::move(agent)),
           m_broker(std::move(broker)),
-          m_TC_deposit_contract_key(std::move(deposit_contract_key)),
-          m_TC_withdraw_contract_key(std::move(withdraw_contract_key)) {
+          m_deposit_contract_key(std::move(deposit_contract_key)),
+          m_withdraw_contract_key(std::move(withdraw_contract_key)) {
         auto rnd = cbdc::random_source(cbdc::config::random_source);
         m_privkey = rnd.random_hash();
         m_pubkey = cbdc::pubkey_from_privkey(m_privkey, m_secp.get());
@@ -60,7 +60,7 @@ namespace cbdc::parsec {
         auto params = cbdc::buffer();
         params.append(m_pubkey.data(), m_pubkey.size());
         params.append(note.c_str(), note.size());
-        return execute_params(m_TC_deposit_contract_key, params, false, result_callback);
+        return execute_params(m_deposit_contract_key, params, false, result_callback);
     }
 
     auto account_wallet::deposit_ToT(std::string MT_index, std::string note,
@@ -71,7 +71,17 @@ namespace cbdc::parsec {
         params.append(m_pubkey.data(), m_pubkey.size());
         params.append(&index, sizeof(index));
         params.append(note.c_str(), note.size());
-        return execute_params(m_TC_deposit_contract_key, params, false, result_callback);
+        return execute_params(m_deposit_contract_key, params, false, result_callback);
+    }
+
+    auto account_wallet::deposit_ecash(std::string cm_x, std::string cm_y,
+                             const std::function<void(bool)>& result_callback)
+        -> bool {
+        auto params = cbdc::buffer();
+        params.append(m_pubkey.data(), m_pubkey.size());
+        params.append(cm_x.c_str(), cm_x.size());
+        params.append(cm_y.c_str(), cm_y.size());
+        return execute_params(m_deposit_contract_key, params, false, result_callback);
     }
 
     auto account_wallet::withdraw(std::string proof, 
@@ -93,7 +103,18 @@ namespace cbdc::parsec {
         params.append(_fee.c_str(), _fee.size());
         params.append(_refund.c_str(), _refund.size());
         m_log->trace("withdraw initiated");
-        return execute_params(m_TC_withdraw_contract_key, params, false, result_callback);
+        return execute_params(m_withdraw_contract_key, params, false, result_callback);
+    }
+
+    auto account_wallet::withdraw_ecash(std::string sn, std::string sig_x, std::string sig_y,
+                             const std::function<void(bool)>& result_callback)
+        -> bool {
+        auto params = cbdc::buffer();
+        params.append(m_pubkey.data(), m_pubkey.size());
+        params.append(sn.c_str(), sn.size());
+        params.append(sig_x.c_str(), sig_x.size());
+        params.append(sig_y.c_str(), sig_y.size());
+        return execute_params(m_withdraw_contract_key, params, false, result_callback);
     }
 
     auto account_wallet::execute_params(
