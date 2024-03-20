@@ -76,12 +76,6 @@ add_compile_options(-Wall
 
 add_compile_definitions(_NO_EXCEPTION)
 
-if(W_SHADOW_ALL)
-    add_compile_options(-Wshadow-all)
-else()
-    add_compile_options(-Wshadow)
-endif()
-
 if(W_NEWLINE_EOF)
     add_compile_options(-Wnewline-eof)
 endif()
