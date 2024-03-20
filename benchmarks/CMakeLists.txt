@@ -7,6 +7,7 @@ add_executable(run_benchmarks   low_level.cpp
                                 transactions.cpp
                                 uhs_leveldb.cpp
                                 uhs_set.cpp
+                                tcash.cpp
                                 )
 
 target_compile_options(run_benchmarks PRIVATE -ftest-coverage -fprofile-arcs)
@@ -22,5 +23,8 @@ target_link_libraries(run_benchmarks ${GTEST_LIBRARY}
                                      serialization
                                      crypto
                                      secp256k1
+                                     tc_primitives
+                                     ${FF_LIBRARY}
+                                     ${GMP_LIBRARY}
                                      ${LEVELDB_LIBRARY}
                                      ${CMAKE_THREAD_LIBS_INIT})

@@ -10,7 +10,6 @@ namespace cbdc {
                              _hasher(m_log),
                              m_num_leaves(std::move(num_leaves)),
                              TREE_DEPTH(std::move(levels)) {
-        m_log->trace("num_leaves:", m_num_leaves);
         for (size_t i = 0; i < TREE_DEPTH; i++) {
             m_subtrees.push_back(subtrees.substr(i*NODE_LENGTH*2, NODE_LENGTH*2));
         }
@@ -18,7 +17,6 @@ namespace cbdc {
     
     auto merkle_tree::insert(std::string leaf) -> std::string {
         std::vector<std::string> subtree_copy(m_subtrees); 
-        m_log->trace("leaf:", leaf);
 
         uint64_t currentIndex = m_num_leaves;
         std::string currentLevelHash = leaf;
@@ -48,7 +46,6 @@ namespace cbdc {
     }
 
     auto merkle_tree::root_from_leaves(std::string leaves, uint64_t num_insert) -> std::string {
-        m_log->trace("num leaves:", num_insert);
         std::vector<std::string> m_leaves;
         for (size_t i = 0; i < num_insert; i++) {
             m_leaves.push_back(leaves.substr(i*NODE_LENGTH*2, NODE_LENGTH*2));
