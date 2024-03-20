@@ -42,15 +42,6 @@ function merkletree()
 
         function update_balances(updates, from)
             deposit_amt = 1
-          
-            pool_data = coroutine.yield("TC_pool")
-            pool_amount = 0 
-            if string.len(pool_data) > 0 then
-                pool_amount = string.unpack("I8", pool_data) 
-            end
-            pool_amount=pool_amount+deposit_amt
-            updates["TC_pool"] = string.pack("I8",  pool_amount)
-            
             account_data = coroutine.yield("account_" .. from)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance - deposit_amt
@@ -85,15 +76,6 @@ function merkletree()
 
         function update_balances(updates, from)
             deposit_amt = 1
-          
-            pool_data = coroutine.yield("TC_pool")
-            pool_amount = 0 
-            if string.len(pool_data) > 0 then
-                pool_amount = string.unpack("I8", pool_data) 
-            end
-            pool_amount=pool_amount-deposit_amt
-            updates["TC_pool"] = string.pack("I8",  pool_amount)
-            
             account_data = coroutine.yield("account_" .. from)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance + deposit_amt
@@ -148,16 +130,6 @@ function merkletree()
 
         function update_balances(updates, index, from)
             deposit_amt = 1
-            pool_name = "ToT_pool_" .. index
-
-            pool_data = coroutine.yield(pool_name)
-            pool_amount = 10000
-            if string.len(pool_data) > 0 then
-                pool_amount = string.unpack("I8", pool_data) 
-            end
-            pool_amount=pool_amount+deposit_amt
-            updates[pool_name] = string.pack("I8",  pool_amount)
-            
             account_data = coroutine.yield("account_" .. from)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance - deposit_amt
@@ -190,18 +162,6 @@ function merkletree()
 
         function update_balances(updates, from, nullifierHash, numTrees)
             deposit_amt = 1
-            pool_number = tonumber(string.sub(nullifierHash, -2), 16)
-            pool_index = pool_number % numTrees
-            pool_name = "ToT_pool_" .. pool_index
-
-            pool_data = coroutine.yield(pool_name)
-            pool_amount = 0 
-            if string.len(pool_data) > 0 then
-                pool_amount = string.unpack("I8", pool_data) 
-            end
-            pool_amount=pool_amount-deposit_amt
-            updates[pool_name] = string.pack("I8", pool_amount)
-            
             account_data = coroutine.yield("account_" .. from)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance + deposit_amt
