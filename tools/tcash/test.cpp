@@ -33,6 +33,10 @@ std::vector<std::string> split(std::string s, std::string delimiter) {
 auto main() -> int {
     auto log
         = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
+    
+    // MIMC TEST
+    cbdc::mimc hasher = cbdc::mimc(log);
+    log->trace(hasher.hash("e65f4cb2f4eedeac6bf6a443c13c79709a0b0bfbba152d235fbeace391c933", "1acbad2748537b971755ea1aba976eeee8bb670dc40fc1739f57a826717dd3"));
 
     // MERKLE TREE TEST
     std::string leaves[5] = {"305abbd6d482f95ee1a66db2917aca912c58c78efe84582cca7a68a65de4153d",
@@ -52,7 +56,9 @@ auto main() -> int {
     for (size_t i = 0; i < 5; i++) {
         cbdc::merkle_tree MT = cbdc::merkle_tree(log, subtrees, i);
         std::string hash = MT.insert(leaves[i]);
+        log->trace("leaf: ", leaves[i]);
         log->trace("root: ", hash.substr(0,64));
+        log->trace("subtrees: ", hash.substr(64,1280));
         assert(roots[i] == hash.substr(0,64));
         subtrees = hash.substr(64,1280);
     }

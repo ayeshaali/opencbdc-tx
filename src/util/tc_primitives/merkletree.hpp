@@ -6,6 +6,7 @@
 #include "util/common/logging.hpp"
 #include "mimc.hpp"
 #include <string>
+#include <unordered_map>
 
 namespace cbdc {
     class merkle_tree {

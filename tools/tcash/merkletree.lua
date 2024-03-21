@@ -191,11 +191,11 @@ function merkletree()
         end
 
         root = ToT_MT(subtrees, roots, num_trees)
-        root_update = "ToT_root_" .. root
+        root_update = "ToT_root_" .. string.sub(root, 1, 64)
         root_data = coroutine.yield(root_update)
             
         updates = {}
-        updates[root_update] = string.pack("c64", root) 
+        updates[root_update] = string.pack("c64", string.sub(root, 1, 64))
         return updates
     end
 

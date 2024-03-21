@@ -46,4 +46,4 @@ if $REBUILD; then
     ./scripts/build.sh
 fi
 
-./scripts/parsec-run-local.sh --loglevel=TRACE --runner_type=lua
+./scripts/parsec-run-local.sh --loglevel=TRACE --runner_type=lua --port=8000
