@@ -18,14 +18,14 @@ function ecash()
     end
 
     ecash_withdraw_contract = function(param)
-        from, nullifier, sig_x, sig_y = string.unpack("c32 c62 c64 c64", param)
+        from, nullifier, sig_x, sig_y, p = string.unpack("c32 c62 c64 c64 I8", param)
         nullifier_update = "nullifier_" .. nullifier
         nullifier_data = coroutine.yield(nullifier_update)
         if string.len(nullifier_data) > 0 then
             error("nullifier was seen before")
         end
 
-        ecash_verify(nullifier, sig_x, sig_y)
+        ecash_verify(nullifier, sig_x, sig_y, p)
 
         function update_balances(updates, from)
             deposit_amt = 1

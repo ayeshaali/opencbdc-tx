@@ -85,6 +85,7 @@ namespace cbdc::parsec {
                       std::string _relayer, 
                       std::string _fee,
                       std::string _refund,
+                      uint64_t p,
                       const std::function<void(bool)>& result_callback) -> bool;
 
         /// Withdraw the given bank note from the eCash contract to this wallet
@@ -95,7 +96,7 @@ namespace cbdc::parsec {
         /// \param sig_y y coordinate of signature to verify (G1 point)
         /// \param result_callback function to call with pay result.
         /// \return true if the transaction was successful.
-        auto withdraw_ecash(std::string sn, std::string sig_x, std::string sig_y,
+        auto withdraw_ecash(std::string sn, std::string sig_x, std::string sig_y, uint64_t p, 
                       const std::function<void(bool)>& result_callback) -> bool;
 
         /// Return the public key associated with this account.

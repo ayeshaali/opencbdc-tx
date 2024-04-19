@@ -91,6 +91,7 @@ namespace cbdc::parsec {
                                   std::string _relayer, 
                                   std::string _fee,
                                   std::string _refund,
+                                  uint64_t p,
                                   const std::function<void(bool)>& result_callback)
         -> bool {
         auto params = cbdc::buffer();
@@ -102,11 +103,11 @@ namespace cbdc::parsec {
         params.append(_relayer.c_str(), _relayer.size());
         params.append(_fee.c_str(), _fee.size());
         params.append(_refund.c_str(), _refund.size());
-        m_log->trace("withdraw initiated");
+        params.append(&p, sizeof(p));
         return execute_params(m_withdraw_contract_key, params, false, result_callback);
     }
 
-    auto account_wallet::withdraw_ecash(std::string sn, std::string sig_x, std::string sig_y,
+    auto account_wallet::withdraw_ecash(std::string sn, std::string sig_x, std::string sig_y, uint64_t p, 
                              const std::function<void(bool)>& result_callback)
         -> bool {
         auto params = cbdc::buffer();
@@ -114,6 +115,7 @@ namespace cbdc::parsec {
         params.append(sn.c_str(), sn.size());
         params.append(sig_x.c_str(), sig_x.size());
         params.append(sig_y.c_str(), sig_y.size());
+        params.append(&p, sizeof(p));
         return execute_params(m_withdraw_contract_key, params, false, result_callback);
     }
 
@@ -128,7 +130,6 @@ namespace cbdc::parsec {
             dry_run,
             [&, result_callback](agent::interface::exec_return_type res) {
                 auto success = std::holds_alternative<agent::return_type>(res);
-                m_log->trace("first callback");
                 result_callback(success);
             });
         return send_success;

@@ -43,14 +43,19 @@ auto main(int argc, char** argv) -> int {
         return 1;
     }
 
-    auto cfg = cbdc::parsec::read_config(argc - 2, argv);
+    auto cfg = cbdc::parsec::read_config(argc - 5, argv);
     if(!cfg.has_value()) {
         log->error("Error parsing options");
         return 1;
     }
 
     auto args = cbdc::config::get_args(argc, argv);
-    auto n_wallets = std::stoull(args.back());
+    auto n_wallets = std::stoull(args[args.size()-3]);
+    uint64_t num_trees = std::stoull(args[args.size()-2]);
+    auto update_time = std::stoull(args[args.size()-4]);
+    auto update_txs = static_cast<__int64_t>(num_trees*pow(2,update_time));
+    std::string filename = args.back();
+
     if(n_wallets < 1) {
         log->error("Must be at least one wallet");
         return 1;
@@ -91,7 +96,7 @@ auto main(int argc, char** argv) -> int {
         directory,
         log);
 
-    auto contract_file = args[args.size() - 2];
+    auto contract_file = args[args.size() - 5];
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
     luaL_dofile(L, contract_file.c_str());
@@ -220,18 +225,16 @@ auto main(int argc, char** argv) -> int {
 
     log->trace("Added new accounts");
     
-    uint64_t num_trees = 8;
-    std::string filename = "ToT_8_10k";
     std::mutex samples_mut;
     auto samples_file = std::ofstream(
-        "tools/tcash/tcash_sequences/tx_samples_" + filename + "_" + std::to_string(cfg->m_component_id) + ".txt");
+        "tools/tcash/experiments/tx_samples_" + filename + "_.txt");
     if(!samples_file.good()) {
         log->error("Unable to open samples file");
         return 1;
     }
 
     std::fstream myfile;
-    myfile.open("tools/tcash/tcash_sequences/" + filename + ".txt", std::ios::in);
+    myfile.open("tools/tcash/experiments/" + filename + ".txt", std::ios::in);
 
    auto total_transaction_queue = std::queue<std::vector<std::string>>();
     auto curr_transaction_queue = cbdc::blocking_queue<std::vector<std::string>>();;
@@ -257,6 +260,10 @@ auto main(int argc, char** argv) -> int {
 
     auto thread_count = std::thread::hardware_concurrency();
     auto threads = std::vector<std::thread>();
+
+    auto deposit_count = 1;
+    auto withdraw_count = -1;
+    auto lastUpdatedDeposit = -1;
 
     for (size_t i = 0; i < thread_count-3; i++) {
         auto t = std::thread([&]() {
@@ -289,6 +296,7 @@ auto main(int argc, char** argv) -> int {
                             }
                             log->trace("finished deposit", deposit_number, "for wallet", wallet_index);
                             deposit_flight--;
+                            deposit_count++;
                             if (!total_transaction_queue.empty()) {
                                 std::vector<std::string> new_deposit = std::move(total_transaction_queue.front());
                                 curr_transaction_queue.push(new_deposit);
@@ -338,18 +346,64 @@ auto main(int argc, char** argv) -> int {
                 } else {
                     int wallet_index = stoi(act[1]);
                     int withdraw_number = stoi(act[2]);
-                    withdraw_flight++;
-                    log->trace("start withdraw", withdraw_number, "for wallet", wallet_index);
+                    if (withdraw_number > withdraw_count) {
+                        withdraw_count =withdraw_number;
+                        withdraw_flight++;
+                        log->trace("start withdraw", withdraw_number, "for wallet", wallet_index);
+                        log->trace(withdraw_number, act[5]);
+                        auto tx_start = std::chrono::high_resolution_clock::now();
+                        auto res = wallets[wallet_index].withdraw(
+                            act[5],
+                            act[6],
+                            act[7],
+                            act[8],
+                            act[9],
+                            act[10],
+                            act[11],
+                            100,
+                            [&, wallet_index, withdraw_number, tx_start](bool ret) {
+                                auto tx_end
+                                = std::chrono::high_resolution_clock::now();
+                                const auto tx_delay = tx_end - tx_start;
+                                auto out_buf = std::stringstream();
+                                out_buf << tx_end.time_since_epoch().count() << " "
+                                        << tx_delay.count() << "\n";
+                                auto out_str = out_buf.str();
+                                {
+                                    std::unique_lock l(samples_mut);
+                                    samples_file << out_str;
+                                }
+                                if(!ret) {
+                                    log->fatal("Withdraw request error");
+                                }
+                                log->trace("finished withdraw", withdraw_number, "for wallet", wallet_index);
+                                withdraw_flight--;
+                                if (!total_transaction_queue.empty()) {
+                                    std::vector<std::string> new_deposit = std::move(total_transaction_queue.front());
+                                    curr_transaction_queue.push(new_deposit);
+                                    total_transaction_queue.pop();
+                                }
+                            }
+                        );
+                        if(!res) {
+                            log->fatal("Withdraw request failed", withdraw_number);
+                        } 
+                    }
+                }
+
+                if (deposit_count % update_txs == 0 && deposit_count > lastUpdatedDeposit) {
+                    auto params = cbdc::buffer();
+                    params.append(&num_trees, sizeof(num_trees));
+                    log->trace("start update after deposit count ", deposit_count);
+                    lastUpdatedDeposit = deposit_count;
+                    update_flight++;
                     auto tx_start = std::chrono::high_resolution_clock::now();
-                    auto res = wallets[wallet_index].withdraw(
-                        act[5],
-                        act[6],
-                        act[7],
-                        act[8],
-                        act[9],
-                        act[10],
-                        act[11],
-                        [&, wallet_index, withdraw_number, tx_start](bool ret) {
+                    auto res = agents[0]->exec(
+                        ToT_update_contract_key,
+                        params,
+                        false,
+                        [&](cbdc::parsec::agent::interface::exec_return_type ret) {
+                            auto success = std::holds_alternative<cbdc::parsec::agent::return_type>(ret);
                             auto tx_end
                             = std::chrono::high_resolution_clock::now();
                             const auto tx_delay = tx_end - tx_start;
@@ -361,21 +415,20 @@ auto main(int argc, char** argv) -> int {
                                 std::unique_lock l(samples_mut);
                                 samples_file << out_str;
                             }
-                            if(!ret) {
-                                log->fatal("Withdraw request error");
+                            if(!success) {
+                                log->fatal("Update request error");
                             }
-                            log->trace("finished withdraw", withdraw_number, "for wallet", wallet_index);
-                            withdraw_flight--;
+                            log->trace("finished update");
+                            update_flight--;
                             if (!total_transaction_queue.empty()) {
                                 std::vector<std::string> new_deposit = std::move(total_transaction_queue.front());
                                 curr_transaction_queue.push(new_deposit);
                                 total_transaction_queue.pop();
                             }
-                        }
-                    );
+                        });
                     if(!res) {
-                        log->fatal("Withdraw request failed");
-                    } 
+                        log->fatal("Update request failed");
+                    }
                 }
             }
         });

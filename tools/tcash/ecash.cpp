@@ -43,13 +43,14 @@ auto main(int argc, char** argv) -> int {
         return 1;
     }
 
-    auto cfg = cbdc::parsec::read_config(argc - 2, argv);
+    auto cfg = cbdc::parsec::read_config(argc - 3, argv);
     if(!cfg.has_value()) {
         log->error("Error parsing options");
         return 1;
     }
 
     auto args = cbdc::config::get_args(argc, argv);
+    uint64_t p = std::stoull(args[args.size()-2]);
     auto n_wallets = std::stoull(args.back());
     if(n_wallets < 1) {
         log->error("Must be at least one wallet");
@@ -91,7 +92,7 @@ auto main(int argc, char** argv) -> int {
         directory,
         log);
 
-    auto contract_file = args[args.size() - 2];
+    auto contract_file = args[args.size() - 3];
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
     luaL_dofile(L, contract_file.c_str());
@@ -197,11 +198,11 @@ auto main(int argc, char** argv) -> int {
     log->trace("Added new accounts");
     
     std::fstream myfile;
-    myfile.open("tools/tcash/tcash_sequences/ecash_10k_ordered.txt", std::ios::in);
+    myfile.open("tools/tcash/experiments/tcash_sequences/ecash_10k_ordered.txt", std::ios::in);
 
     std::mutex samples_mut;
     auto samples_file = std::ofstream(
-        "tools/tcash/tcash_sequences/tx_samples_ecash_10k_ordered_" + std::to_string(cfg->m_component_id) + ".txt");
+        "tools/tcash/experiments/tx_samples_ecash_10k_ordered_.txt");
     if(!samples_file.good()) {
         log->error("Unable to open samples file");
         return 1;
@@ -227,6 +228,7 @@ auto main(int argc, char** argv) -> int {
 
     auto deposit_flight = std::atomic<size_t>();
     auto withdraw_flight = std::atomic<size_t>();
+    auto withdraw_count = -1;
 
     auto thread_count = std::thread::hardware_concurrency();
     auto threads = std::vector<std::thread>();
@@ -274,40 +276,44 @@ auto main(int argc, char** argv) -> int {
                 } else {
                     int wallet_index = stoi(act[1]);
                     int withdraw_number = stoi(act[2]);
-                    withdraw_flight++;
-                    log->trace("start withdraw", withdraw_number, "for wallet", wallet_index);
-                    auto tx_start = std::chrono::high_resolution_clock::now();
-                    auto res = wallets[wallet_index].withdraw_ecash(
-                        act[3],
-                        act[4],
-                        act[5],
-                        [&, wallet_index, withdraw_number, tx_start](bool ret) {
-                            auto tx_end
-                            = std::chrono::high_resolution_clock::now();
-                            const auto tx_delay = tx_end - tx_start;
-                            auto out_buf = std::stringstream();
-                            out_buf << tx_end.time_since_epoch().count() << " "
-                                    << tx_delay.count() << "\n";
-                            auto out_str = out_buf.str();
-                            {
-                                std::unique_lock l(samples_mut);
-                                samples_file << out_str;
+                    if (withdraw_number > withdraw_count) {
+                        withdraw_count =withdraw_number;
+                        withdraw_flight++;
+                        log->trace("start withdraw", withdraw_number, "for wallet", wallet_index);
+                        auto tx_start = std::chrono::high_resolution_clock::now();
+                        auto res = wallets[wallet_index].withdraw_ecash(
+                            act[3],
+                            act[4],
+                            act[5],
+                            p,
+                            [&, wallet_index, withdraw_number, tx_start](bool ret) {
+                                auto tx_end
+                                = std::chrono::high_resolution_clock::now();
+                                const auto tx_delay = tx_end - tx_start;
+                                auto out_buf = std::stringstream();
+                                out_buf << tx_end.time_since_epoch().count() << " "
+                                        << tx_delay.count() << "\n";
+                                auto out_str = out_buf.str();
+                                {
+                                    std::unique_lock l(samples_mut);
+                                    samples_file << out_str;
+                                }
+                                if(!ret) {
+                                    log->fatal("Withdraw request error");
+                                }
+                                log->trace("finished withdraw", withdraw_number, "for wallet", wallet_index);
+                                withdraw_flight--;
+                                if (!total_transaction_queue.empty()) {
+                                    std::vector<std::string> new_deposit = std::move(total_transaction_queue.front());
+                                    curr_transaction_queue.push(new_deposit);
+                                    total_transaction_queue.pop();
+                                }
                             }
-                            if(!ret) {
-                                log->fatal("Withdraw request error");
-                            }
-                            log->trace("finished withdraw", withdraw_number, "for wallet", wallet_index);
-                            withdraw_flight--;
-                            if (!total_transaction_queue.empty()) {
-                                std::vector<std::string> new_deposit = std::move(total_transaction_queue.front());
-                                curr_transaction_queue.push(new_deposit);
-                                total_transaction_queue.pop();
-                            }
-                        }
-                    );
-                    if(!res) {
-                        log->fatal("Withdraw request failed");
-                    } 
+                        );
+                        if(!res) {
+                            log->fatal("Withdraw request failed");
+                        } 
+                    }
                 }
             }
         });

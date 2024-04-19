@@ -55,7 +55,7 @@ function merkletree()
     end
 
     tc_withdraw_contract = function(param)
-        from, proof, root, nullifierHash, recipient, relayer, fee, refund = string.unpack("c32 c512 c64 c64 c40 c40 c64 c64", param)
+        from, proof, root, nullifierHash, recipient, relayer, fee, refund, p = string.unpack("c32 c512 c64 c64 c40 c40 c64 c64 I8", param)
         nullifierHash_update = "nullifier_" .. nullifierHash
         nullifierHash_data = coroutine.yield(nullifierHash_update)
         if string.len(nullifierHash_data) > 0 then
@@ -69,9 +69,9 @@ function merkletree()
                 error("root does not exist")
             end
         end
-
+        
         print("verifying")
-        verify_proof(proof, root, nullifierHash, recipient, relayer, fee, refund)
+        verify_proof(proof, root, nullifierHash, recipient, relayer, fee, refund, p)
         print("proof verified")
 
         function update_balances(updates, from)

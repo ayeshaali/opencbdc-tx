@@ -306,27 +306,37 @@ namespace cbdc::parsec::agent::runner {
 
     auto lua_runner::verify_proof(lua_State* L) -> int {
         int n = lua_gettop(L);
-        if(n != 7) {
+        if(n != 8) {
             lua_pushliteral(L, "not enough arguments for verifying proof");
             lua_error(L);
         }
 
         std::string args[7];
-        for (int i = 1; i < 7; i++) {
+        for (int i = 1; i < 8; i++) {
             size_t sz{};
             const auto* str = lua_tolstring(L, i, &sz);
             assert(str != nullptr);
             args[i-1] = std::string(str);
         }
+
+        size_t sz{};
+        const auto* str = lua_tolstring(L, 8, &sz);
+        assert(str != nullptr);
+        int p = std::stoi(std::string(str));
+
         auto log
         = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
         cbdc::verifier v =  cbdc::verifier(log);
-        bool result = v.verifyProof(args[0], args[1], args[2], args[3], args[4]);
-        (void) result;
-        // if(result == 0) {
-        //     lua_pushliteral(L, "invalid proof");
-        //     lua_error(L);
-        // }
+
+        double p_x = 6619.475*p;
+        auto wait_time = std::chrono::nanoseconds(int(p_x));
+        std::this_thread::sleep_for(wait_time);
+
+        bool result = true; // v.verifyProof(args[0], args[1], args[2], args[3], args[4]);
+        if(result == 0) {
+            lua_pushliteral(L, "invalid proof");
+            lua_error(L);
+        }
 
         return 0;
     }
@@ -387,7 +397,7 @@ namespace cbdc::parsec::agent::runner {
 
     auto lua_runner::ecash_verify(lua_State* L) -> int {
         int n = lua_gettop(L);
-        if(n != 3) {
+        if(n != 4) {
             lua_pushliteral(L, "not enough arguments for verifying signature");
             lua_error(L);
         }
@@ -405,11 +415,19 @@ namespace cbdc::parsec::agent::runner {
         assert(str != nullptr);
         std::string sig_y = std::string(str);
 
+        str = lua_tolstring(L, 4, &sz);
+        assert(str != nullptr);
+        int p = std::stoi(std::string(str));
+
          auto log
         = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
         cbdc::blind_sig bs = cbdc::blind_sig(log);
 
-        bool result = bs.verify(sn, sig_x, sig_y);
+        double p_x = 2095.80*p;
+        auto wait_time = std::chrono::nanoseconds(int(p_x));
+        std::this_thread::sleep_for(wait_time);
+
+        bool result = true; // bs.verify(sn, sig_x, sig_y);
         if(result == 0) {
             lua_pushliteral(L, "invalid proof");
             lua_error(L);
