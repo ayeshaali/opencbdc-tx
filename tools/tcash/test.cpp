@@ -100,6 +100,7 @@ auto main() -> int {
                 assert(d[4]==sig.substr(64,128));
             } else if (!op.compare("1")) {
                 bool result = bs.verify(d[1], d[2], d[3]);
+                (void) result;
                 log->trace("Withdraw");
                 assert(result);
             }

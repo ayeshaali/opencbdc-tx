@@ -42,7 +42,7 @@ done
 for i in {1..5}; do 
     sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=$i
     sleep 5
-    ./scripts/tcash_scripts/run-tcash.sh --run=ToT --agents=$i
+    ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=16 --file=ToT_16_50k_ordered --update=7 --agents=$i
 done
 
 
@@ -62,6 +62,25 @@ for j in {2,4,8,16,32,64,128,256,512}; do
         sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
         sleep 5
         ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees="$j" --file=ToT_"$j"_deposits --update="$i" --agents=1
+    done
+done
+
+## WALLETS
+for i in {10,15,20,25}; do
+    for j in {5,10,15,20,25,30,40,50,60,70,80,90,100}; do 
+        sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=$i
+        sleep 5
+        echo agents $i wallets $j
+        ./scripts/tcash_scripts/run-tcash.sh --run=lua_bench --agents=$i --w=$j
+    done
+done
+
+for i in {1,5,10,15,20,25}; do
+    for j in {5,10,15,20,25,30,40,50,60,70,80,90,100}; do 
+        sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=$i
+        sleep 5
+        echo agents $i wallets $j
+        ./scripts/tcash_scripts/run-tcash.sh --run=ecash --agents=$i --w=$j
     done
 done
 

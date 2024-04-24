@@ -226,6 +226,11 @@ auto main(int argc, char** argv) -> int {
         total_transaction_queue.pop();
     }
 
+    auto rng_seed
+        = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    auto rng = std::default_random_engine(rng_seed);
+    auto dist = std::uniform_int_distribution<size_t>(0, wallets.size() - 1);
+
     auto deposit_flight = std::atomic<size_t>();
     auto withdraw_flight = std::atomic<size_t>();
     auto withdraw_count = -1;
@@ -239,6 +244,9 @@ auto main(int argc, char** argv) -> int {
                 std::string op = act[0];
                 if (!op.compare("0")) {
                     int wallet_index = stoi(act[1]);
+                    if (wallets.size() != 5) {
+                        wallet_index = dist(rng);
+                    }
                     int deposit_number = stoi(act[2]);
                     log->trace("start deposit", deposit_number, "for wallet", wallet_index);
                     deposit_flight++;
@@ -274,6 +282,9 @@ auto main(int argc, char** argv) -> int {
                     }
                 } else {
                     int wallet_index = stoi(act[1]);
+                    if (wallets.size() != 5) {
+                        wallet_index = dist(rng);
+                    }
                     int withdraw_number = stoi(act[2]);
                     if (withdraw_number > withdraw_count) {
                         withdraw_count =withdraw_number;
@@ -434,6 +445,7 @@ auto sequential_check(std::shared_ptr<cbdc::logging::log> log,
                     act[8],
                     act[9],
                     act[10],
+                    100,
                     [&, wallet_index, withdraw_number](bool ret) {
                         if(!ret) {
                             log->fatal("Withdraw request error");

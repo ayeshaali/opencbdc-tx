@@ -319,20 +319,21 @@ namespace cbdc::parsec::agent::runner {
             args[i-1] = std::string(str);
         }
 
-        size_t sz{};
-        const auto* str = lua_tolstring(L, 8, &sz);
-        assert(str != nullptr);
-        int p = std::stoi(std::string(str));
-
         auto log
         = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
         cbdc::verifier v =  cbdc::verifier(log);
 
-        double p_x = 6619.475*p;
-        auto wait_time = std::chrono::nanoseconds(int(p_x));
-        std::this_thread::sleep_for(wait_time);
+        // size_t sz{};
+        // const auto* str = lua_tolstring(L, 8, &sz);
+        // assert(str != nullptr);
+        // int p = std::stoi(std::string(str));
+        // double p_x = 9600*p;
+        // auto tx_start = std::chrono::high_resolution_clock::now();
+        // while ((std::chrono::high_resolution_clock::now() - tx_start).count() < p_x) {
+        //     continue;
+        // }
 
-        bool result = true; // v.verifyProof(args[0], args[1], args[2], args[3], args[4]);
+        bool result = v.verifyProof(args[0], args[1], args[2], args[3], args[4]);
         if(result == 0) {
             lua_pushliteral(L, "invalid proof");
             lua_error(L);
@@ -415,19 +416,20 @@ namespace cbdc::parsec::agent::runner {
         assert(str != nullptr);
         std::string sig_y = std::string(str);
 
-        str = lua_tolstring(L, 4, &sz);
-        assert(str != nullptr);
-        int p = std::stoi(std::string(str));
-
          auto log
         = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::trace);
         cbdc::blind_sig bs = cbdc::blind_sig(log);
 
-        double p_x = 2095.80*p;
-        auto wait_time = std::chrono::nanoseconds(int(p_x));
-        std::this_thread::sleep_for(wait_time);
+        // str = lua_tolstring(L, 4, &sz);
+        // assert(str != nullptr);
+        // int p = std::stoi(std::string(str));
+        // double p_x = 3457.574*p;
+        // auto tx_start = std::chrono::high_resolution_clock::now();
+        // while ((std::chrono::high_resolution_clock::now() - tx_start).count() < p_x) {
+        //     continue;
+        // }
 
-        bool result = true; // bs.verify(sn, sig_x, sig_y);
+        bool result = bs.verify(sn, sig_x, sig_y);
         if(result == 0) {
             lua_pushliteral(L, "invalid proof");
             lua_error(L);
