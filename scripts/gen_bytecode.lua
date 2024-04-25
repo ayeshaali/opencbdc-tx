@@ -10,7 +10,9 @@ function gen_bytecode()
 
         function get_account(name)
             account_key = get_account_key(name)
-            account_data = coroutine.yield(account_key)
+
+            -- 0 is read lock, 1 is write lock
+            account_data = coroutine.yield(account_key, 1)
             if string.len(account_data) > 0 then
                 account_balance, account_sequence
                 = string.unpack("I8 I8", account_data)
