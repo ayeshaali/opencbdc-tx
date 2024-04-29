@@ -7,14 +7,14 @@ function merkletree()
         end 
 
         function insert(commitment)
-            num_leaves_data = coroutine.yield("num_leaves")
+            num_leaves_data = coroutine.yield("num_leaves", 1)
             num_leaves = 0 
             if string.len(num_leaves_data) > 0 then
                 num_leaves = string.unpack("I8", num_leaves_data) 
             end
 
             subtrees = ""
-            subtrees_data = coroutine.yield("subtrees")
+            subtrees_data = coroutine.yield("subtrees", 1)
             if string.len(subtrees_data) > 0 then
                 subtrees = string.unpack("c1280", subtrees_data)
             else 
@@ -26,15 +26,15 @@ function merkletree()
             curr_root_update = "root"
             root_update = "root_" .. root
             leaf_update = "leaf_" .. commitment
-            leaf_data = coroutine.yield(leaf_update)
-            root_data = coroutine.yield(root_update)
-            curr_root_data = coroutine.yield(curr_root_update)
+            leaf_data = coroutine.yield(leaf_update, 1)
+            root_data = coroutine.yield(root_update, 1)
+            curr_root_data = coroutine.yield(curr_root_update, 1)
             num_leaves = num_leaves + 1
             
             updates = {}
             updates[curr_root_update] = string.pack("c64", root)
-            updates[root_update] = string.pack("c64", root) 
-            updates[leaf_update] = string.pack("c64", commitment) 
+            updates[root_update] = string.pack("I8", 1) -- string.pack("c64", root) 
+            updates[leaf_update] = string.pack("I8", 1) -- string.pack("c64", commitment) 
             updates["subtrees"] = string.pack("c1280", string.sub(MT_updates, 65, 1280))            
             updates["num_leaves"] = string.pack("I8", num_leaves) 
             return updates
@@ -42,7 +42,7 @@ function merkletree()
 
         function update_balances(updates, from)
             deposit_amt = 1
-            account_data = coroutine.yield("account_" .. from)
+            account_data = coroutine.yield("account_" .. from, 1)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance - deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
@@ -57,11 +57,11 @@ function merkletree()
     tc_withdraw_contract = function(param)
         from, proof, root, nullifierHash, recipient, relayer, fee, refund, p = string.unpack("c32 c512 c64 c64 c40 c40 c64 c64 I8", param)
         nullifierHash_update = "nullifier_" .. nullifierHash
-        nullifierHash_data = coroutine.yield(nullifierHash_update)
+        nullifierHash_data = coroutine.yield(nullifierHash_update, 1)
         if string.len(nullifierHash_data) > 0 then
             error("nullifier hash was seen before")
         end
-        root_data = coroutine.yield("root_" .. root)
+        root_data = coroutine.yield("root_" .. root, 0)
 
         function root_check()
             if not (string.len(root_data) > 0) then
@@ -70,13 +70,11 @@ function merkletree()
             end
         end
         
-        print("verifying")
         verify_proof(proof, root, nullifierHash, recipient, relayer, fee, refund, p)
-        print("proof verified")
 
         function update_balances(updates, from)
             deposit_amt = 1
-            account_data = coroutine.yield("account_" .. from)
+            account_data = coroutine.yield("account_" .. from, 1)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance + deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
@@ -84,7 +82,7 @@ function merkletree()
         end 
 
         updates = {}
-        updates[nullifierHash_update] = nullifierHash
+        updates[nullifierHash_update] = string.pack("I8", 1) -- nullifierHash
         updates = update_balances(updates, from)
         return updates
     end
@@ -98,14 +96,14 @@ function merkletree()
 
         function insert(index, commitment)
             tree_prefix = "tree_" .. index .. "_"
-            num_leaves_data = coroutine.yield(tree_prefix .. "num_leaves")
+            num_leaves_data = coroutine.yield(tree_prefix .. "num_leaves", 1)
             num_leaves = 0 
             if string.len(num_leaves_data) > 0 then
                 num_leaves = string.unpack("I8", num_leaves_data) 
             end
 
             subtrees = ""
-            subtrees_data = coroutine.yield(tree_prefix .. "subtrees")
+            subtrees_data = coroutine.yield(tree_prefix .. "subtrees", 1)
             if string.len(subtrees_data) > 0 then
                 subtrees = string.unpack("c1280", subtrees_data)
             else 
@@ -116,13 +114,13 @@ function merkletree()
             root = string.sub(MT_updates, 1, 64)
             root_update = tree_prefix .. "root"
             leaf_update = tree_prefix .. "leaf_" .. commitment
-            leaf_data = coroutine.yield(leaf_update)
-            root_data = coroutine.yield(root_update)
+            leaf_data = coroutine.yield(leaf_update, 1)
+            root_data = coroutine.yield(root_update, 1)
             num_leaves = num_leaves + 1
             
             updates = {}
-            updates[root_update] = string.pack("c64", root) 
-            updates[leaf_update] = string.pack("c64", commitment) 
+            updates[root_update] = string.pack("I8", 1) -- string.pack("c64", root) 
+            updates[leaf_update] = string.pack("I8", 1) -- string.pack("c64", commitment) 
             updates[tree_prefix .. "subtrees"] = string.pack("c1280", string.sub(MT_updates, 65, 1280))            
             updates[tree_prefix .. "num_leaves"] = string.pack("I8", num_leaves) 
             return updates
@@ -130,7 +128,7 @@ function merkletree()
 
         function update_balances(updates, index, from)
             deposit_amt = 1
-            account_data = coroutine.yield("account_" .. from)
+            account_data = coroutine.yield("account_" .. from, 1)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance - deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
@@ -145,12 +143,12 @@ function merkletree()
     ToT_withdraw_contract = function(param)
         from, proof, root, nullifierHash, recipient, relayer, fee, refund = string.unpack("c32 c512 c64 c64 c40 c40 c64 c64", param)
         nullifierHash_update = "nullifier_" .. nullifierHash
-        nullifierHash_data = coroutine.yield(nullifierHash_update)
+        nullifierHash_data = coroutine.yield(nullifierHash_update, 1)
         if string.len(nullifierHash_data) > 0 then
             error("nullifier hash was seen before")
         end
 
-        root_data = coroutine.yield("ToT_root_" .. root)
+        root_data = coroutine.yield("ToT_root_" .. root, 0)
         
         function root_check()
             if not (string.len(root_data) > 0) then
@@ -158,11 +156,11 @@ function merkletree()
             end
         end
 
-        verify_proof(proof, root, nullifierHash, recipient, relayer, fee, refund)
+        verify_proof(proof, root, nullifierHash, recipient, relayer, fee, refund, 100)
 
         function update_balances(updates, from, nullifierHash, numTrees)
             deposit_amt = 1
-            account_data = coroutine.yield("account_" .. from)
+            account_data = coroutine.yield("account_" .. from, 1)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance + deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
@@ -170,7 +168,7 @@ function merkletree()
         end 
 
         updates = {}
-        updates[nullifierHash_update] = nullifierHash
+        updates[nullifierHash_update] = string.pack("I8", 1) -- nullifierHash
         updates = update_balances(updates, from, nullifierHash, 8)
         return updates
     end
@@ -181,7 +179,7 @@ function merkletree()
         roots = ""
         for i=0,num_trees-1,1 do
         tree_prefix = "tree_" .. i .. "_"
-            root_data = coroutine.yield(tree_prefix .. "root")
+            root_data = coroutine.yield(tree_prefix .. "root", 0)
             if string.len(root_data) > 0 then
                 root = string.unpack("c64", root_data) 
             else
@@ -192,10 +190,10 @@ function merkletree()
 
         root = ToT_MT(subtrees, roots, num_trees)
         root_update = "ToT_root_" .. string.sub(root, 1, 64)
-        root_data = coroutine.yield(root_update)
+        root_data = coroutine.yield(root_update, 1)
             
         updates = {}
-        updates[root_update] = string.pack("c64", string.sub(root, 1, 64))
+        updates[root_update] = string.pack("I8", 1) -- string.pack("c64", string.sub(root, 1, 64))
         return updates
     end
 

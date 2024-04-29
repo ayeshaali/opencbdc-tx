@@ -4,7 +4,7 @@ function ecash()
 
         function update_balances(updates, from)
             deposit_amt = 1
-            account_data = coroutine.yield("account_" .. from)
+            account_data = coroutine.yield("account_" .. from, 1)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance - deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
@@ -20,7 +20,7 @@ function ecash()
     ecash_withdraw_contract = function(param)
         from, nullifier, sig_x, sig_y, p = string.unpack("c32 c62 c64 c64 I8", param)
         nullifier_update = "nullifier_" .. nullifier
-        nullifier_data = coroutine.yield(nullifier_update)
+        nullifier_data = coroutine.yield(nullifier_update, 1)
         if string.len(nullifier_data) > 0 then
             error("nullifier was seen before")
         end
@@ -29,7 +29,7 @@ function ecash()
 
         function update_balances(updates, from)
             deposit_amt = 1
-            account_data = coroutine.yield("account_" .. from)
+            account_data = coroutine.yield("account_" .. from, 1)
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance + deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)

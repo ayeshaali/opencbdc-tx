@@ -43,7 +43,7 @@ auto main(int argc, char** argv) -> int {
         return 1;
     }
 
-    auto cfg = cbdc::parsec::read_config(argc - 5, argv);
+    auto cfg = cbdc::parsec::read_config(argc - 6, argv);
     if(!cfg.has_value()) {
         log->error("Error parsing options");
         return 1;
@@ -53,6 +53,8 @@ auto main(int argc, char** argv) -> int {
     auto n_wallets = std::stoull(args[args.size()-3]);
     uint64_t num_trees = std::stoull(args[args.size()-2]);
     auto update_time = std::stoull(args[args.size()-4]);
+    auto prob = std::stoull(args[args.size()-5]);
+    log->trace(prob);
     auto update_txs = static_cast<__int64_t>(num_trees*pow(2,update_time));
     std::string filename = args.back();
 
@@ -96,7 +98,7 @@ auto main(int argc, char** argv) -> int {
         directory,
         log);
 
-    auto contract_file = args[args.size() - 5];
+    auto contract_file = args[args.size() - 6];
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
     luaL_dofile(L, contract_file.c_str());
@@ -258,6 +260,8 @@ auto main(int argc, char** argv) -> int {
         = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     auto rng = std::default_random_engine(rng_seed);
     auto dist = std::uniform_int_distribution<size_t>(0, wallets.size() - 1);
+    // std::discrete_distribution<> adv_dist({ double(prob), double(100-prob)});
+    // auto tree_dist = std::uniform_int_distribution<size_t>(1, num_trees-1);
 
     auto deposit_flight = std::atomic<size_t>();
     auto withdraw_flight = std::atomic<size_t>();
@@ -280,6 +284,12 @@ auto main(int argc, char** argv) -> int {
                     if (wallets.size() != 5) {
                         wallet_index = dist(rng);
                     }
+                    // auto tree_deposit = adv_dist(rng);
+                    // log->trace(tree_deposit);
+                    // if (tree_deposit == 1) {
+                    //     tree_deposit=tree_dist(rng);
+                    // }
+                    // log->trace(tree_deposit); std::to_string(tree_deposit),
                     int deposit_number = stoi(act[2]);
                     log->trace("start deposit", deposit_number, "for wallet", wallet_index);
                     deposit_flight++;

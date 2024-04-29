@@ -1,5 +1,53 @@
 #!/bin/bash
-set -e 
+
+## MAIN 
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=lua_bench --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ecash --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=tcash --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=2 --file=ToT_2_10k_ordered --update=7 --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=4 --file=ToT_4_10k_ordered --update=7 --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=8 --file=ToT_8_10k_ordered --update=7 --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=16 --file=ToT_16_10k_ordered --update=7 --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=32 --file=ToT_32_10k_ordered --update=6 --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=64 --file=ToT_64_10k_ordered --update=5 --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=128 --file=ToT_128_50k_ordered --update=4 --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=256 --file=ToT_256_50k_ordered --update=3 --agents=1
+
+sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+sleep 3
+sudo ./scripts/tcash_scripts/run-tcash.sh --run=ToT --trees=512 --file=ToT_512_50k_ordered --update=2 --agents=1
 
 ## CRYPTO SLEEP
 # tcash 
@@ -66,22 +114,40 @@ for j in {2,4,8,16,32,64,128,256,512}; do
 done
 
 ## WALLETS
-for i in {10,15,20,25}; do
+# parameters: # agents, # wallets, design
+wallet_wrapper() {
+    sudo ./scripts/tcash_scripts/build-run-parsec.sh --all --agents=$1
+    sleep 5
+    echo agents $i wallets $j
+    ./scripts/tcash_scripts/run-tcash.sh --run=$3 --agents=$1 --w=$2
+}
+
+design=tcash
+for i in {1,5,10,15,20,25}; do
     for j in {5,10,15,20,25,30,40,50,60,70,80,90,100}; do 
-        sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=$i
-        sleep 5
-        echo agents $i wallets $j
-        ./scripts/tcash_scripts/run-tcash.sh --run=lua_bench --agents=$i --w=$j
+        IN_PROGRESS=1;
+        echo $i $j
+        while [[ $IN_PROGRESS -eq 1 ]]; do
+            wallet_wrapper "$i" "$j" "$design" > log 2>&1
+            result=$?
+            if [[ $result -ne 0 ]]; then 
+                echo failure
+                IN_PROGRESS=1
+            else 
+                echo success
+                IN_PROGRESS=0
+            fi 
+            sleep 5
+        done
     done
 done
 
-for i in {1,5,10,15,20,25}; do
-    for j in {5,10,15,20,25,30,40,50,60,70,80,90,100}; do 
-        sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=$i
-        sleep 5
-        echo agents $i wallets $j
-        ./scripts/tcash_scripts/run-tcash.sh --run=ecash --agents=$i --w=$j
-    done
+## ADVERSARIAL WORKLOADS
+for j in {10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100}; do 
+    sudo ./scripts/tcash_scripts/build-run-parsec.sh --agents=1
+    sleep 5
+    echo probability $j/100
+    ./scripts/tcash_scripts/run-tcash.sh --run=ToT  --trees=16 --file=ToT_16_10k_ordered --update=7 --agents=1 --prob=$j
 done
 
 sudo ./scripts/tcash_scripts/build-run-parsec.sh --kill
