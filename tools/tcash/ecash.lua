@@ -8,6 +8,15 @@ function ecash()
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance - deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
+
+            pool_data = coroutine.yield("pool_balance", 1)
+            pool_balance = 0
+            if string.len(pool_data) > 0 then
+                pool_balance = string.unpack("I8", pool_data)
+            end
+            pool_balance = pool_balance + deposit_amt
+            updates["pool_balance"] = string.pack("I8", pool_balance)
+
             return updates
         end 
 
@@ -33,6 +42,15 @@ function ecash()
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance + deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
+
+            pool_data = coroutine.yield("pool_balance", 1)
+            pool_balance = 0
+            if string.len(pool_data) > 0 then
+                pool_balance = string.unpack("I8", pool_data)
+            end
+            pool_balance = pool_balance - deposit_amt
+            updates["pool_balance"] = string.pack("I8", pool_balance)
+
             return updates
         end 
 

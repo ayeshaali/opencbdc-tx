@@ -46,6 +46,15 @@ function merkletree()
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance - deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
+
+            pool_data = coroutine.yield("pool_balance", 1)
+            pool_balance = 0
+            if string.len(pool_data) > 0 then
+                pool_balance = string.unpack("I8", pool_data)
+            end
+            pool_balance = pool_balance + deposit_amt
+            updates["pool_balance"] = string.pack("I8", pool_balance)
+
             return updates
         end 
 
@@ -78,6 +87,15 @@ function merkletree()
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance + deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
+
+            pool_data = coroutine.yield("pool_balance", 1)
+            pool_balance = 0
+            if string.len(pool_data) > 0 then
+                pool_balance = string.unpack("I8", pool_data)
+            end
+            pool_balance = pool_balance - deposit_amt
+            updates["pool_balance"] = string.pack("I8", pool_balance)
+
             return updates
         end 
 
@@ -119,7 +137,7 @@ function merkletree()
             num_leaves = num_leaves + 1
             
             updates = {}
-            updates[root_update] = string.pack("I8", 1) -- string.pack("c64", root) 
+            updates[root_update] = string.pack("c64", root) 
             updates[leaf_update] = string.pack("I8", 1) -- string.pack("c64", commitment) 
             updates[tree_prefix .. "subtrees"] = string.pack("c1280", string.sub(MT_updates, 65, 1280))            
             updates[tree_prefix .. "num_leaves"] = string.pack("I8", num_leaves) 
@@ -132,6 +150,15 @@ function merkletree()
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance - deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
+
+            pool_name = "ToT_pool_" .. index
+            pool_data = coroutine.yield(pool_name, 1)
+            pool_balance = 0
+            if string.len(pool_data) > 0 then
+                pool_balance = string.unpack("I8", pool_data)
+            end
+            pool_balance = pool_balance + deposit_amt
+            updates[pool_name] = string.pack("I8", pool_balance)
             return updates
         end 
 
@@ -164,6 +191,19 @@ function merkletree()
             account_balance = string.unpack("I8", account_data)
             account_balance = account_balance + deposit_amt
             updates["account_" .. from] = string.pack("I8", account_balance)
+
+            pool_number = tonumber(string.sub(nullifierHash, -2), 16)
+            pool_index = pool_number % numTrees
+            pool_name =  "ToT_pool_" .. pool_index
+
+            pool_data = coroutine.yield(pool_name, 1)
+            pool_amount = 0 
+            if string.len(pool_data) > 0 then
+                pool_amount = string.unpack("I8", pool_data) 
+            end
+            pool_amount=pool_amount-deposit_amt
+            updates[pool_name] = string.pack("I8", pool_amount)
+
             return updates
         end 
 
@@ -178,8 +218,8 @@ function merkletree()
         num_trees = string.unpack("I8", param)
         roots = ""
         for i=0,num_trees-1,1 do
-        tree_prefix = "tree_" .. i .. "_"
-            root_data = coroutine.yield(tree_prefix .. "root", 0)
+            tree_prefix = "tree_" .. i .. "_"
+            root_data = coroutine.yield(tree_prefix .. "root", 1)
             if string.len(root_data) > 0 then
                 root = string.unpack("c64", root_data) 
             else
